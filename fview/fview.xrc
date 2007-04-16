@@ -1,0 +1,947 @@
+<?xml version="1.0" ?>
+<resource>
+  <object class="wxPanel" name="APP_PANEL">
+    <object class="wxBoxSizer">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <object class="wxPanel">
+          <object class="wxBoxSizer">
+            <orient>wxVERTICAL</orient>
+            <object class="sizeritem">
+              <object class="wxStaticBitmap">
+                
+                
+                
+                
+                
+                
+                
+                
+                <bitmap>fview.gif</bitmap>
+                
+                
+                
+                
+                
+                
+                
+                
+                <bg>#FFFFFF</bg>
+              </object>
+              
+              
+              
+              
+              
+              
+              
+              
+              <flag>wxALIGN_CENTRE</flag>
+            </object>
+          </object>
+          <bg>#FFFFFF</bg>
+        </object>
+        
+        
+        
+        
+        
+        
+        
+        
+        <flag>wxEXPAND</flag>
+      </object>
+      <object class="sizeritem">
+        <object class="wxPanel" name="MAIN_DISPLAY_PANEL"/>
+        
+        
+        
+        
+        
+        
+        
+        
+        <option>1</option>
+        
+        
+        
+        
+        
+        
+        
+        
+        <flag>wxEXPAND</flag>
+      </object>
+    </object>
+  </object>
+  <object class="wxPanel" name="INIT_CAM_PANEL">
+    <object class="wxBoxSizer">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <object class="wxFlexGridSizer">
+          <cols>2</cols>
+          <rows>2</rows>
+        </object>
+        
+        
+        
+        
+        
+        
+        
+        
+        <option>1</option>
+        
+        
+        
+        
+        
+        
+        
+        
+        <flag>wxEXPAND</flag>
+      </object>
+      <object class="sizeritem">
+        <object class="wxButton" name="INIT_CAMERA_BUTTON">
+          
+          
+          
+          
+          
+          
+          
+          
+          <label>Initialize camera</label>
+        </object>
+        
+        
+        
+        
+        
+        
+        
+        
+        <flag>wxALIGN_CENTRE</flag>
+      </object>
+    </object>
+  </object>
+  <object class="wxPanel" name="CAMERA_CONTROLS_PANEL">
+    <object class="wxFlexGridSizer">
+      <cols>2</cols>
+      <rows>2</rows>
+      <object class="sizeritem">
+        <object class="wxStaticBoxSizer">
+          <label>Framerate and Buffer Control</label>
+          <orient>wxVERTICAL</orient>
+          <object class="sizeritem">
+            <object class="wxPanel" name="CAM_FRAMERATE_PANEL">
+              <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                  <object class="wxFlexGridSizer">
+                    <cols>2</cols>
+                    <object class="sizeritem">
+                      <object class="wxStaticText">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>Maximum framerate:</label>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="CAM_FRAMERATE"/>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxStaticText">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>Num buffers:</label>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="CAM_NUM_BUFFERS"/>
+                    </object>
+                    <growablecols>1</growablecols>
+                  </object>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <flag>wxALL</flag>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <border>10</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxStaticText">
+                        
+                        
+                        
+                        
+                        <label>Trigger mode:</label>
+                      </object>
+                      
+                      
+                      
+                      
+                      <flag>wxALIGN_CENTRE</flag>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxChoice" name="EXTERNAL_TRIGGER_MODE">
+                        
+                        
+                        
+                        
+                        <content/>
+                      </object>
+                      
+                      
+                      
+                      
+                      <option>1</option>
+                    </object>
+                  </object>
+                  
+                  
+                  
+                  
+                  <flag>wxEXPAND</flag>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxButton" name="CAM_FRAMERATE_QUERY">
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    <label>query camera</label>
+                  </object>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <flag>wxALL|wxALIGN_CENTRE</flag>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <border>10</border>
+                </object>
+              </object>
+            </object>
+          
+            
+            
+            
+            
+            <flag>wxEXPAND</flag>
+          </object>
+        </object>
+        
+        
+        
+        
+        
+        
+        
+        
+        <option>1</option>
+        
+        
+        
+        
+        
+        
+        
+        
+        <flag>wxEXPAND</flag>
+      </object>
+      <object class="sizeritem">
+        <object class="wxStaticBoxSizer">
+          <label>Hardware Region-of-Interest</label>
+          <orient>wxVERTICAL</orient>
+          <object class="sizeritem">
+            <object class="wxPanel" name="CAM_ROI_PANEL">
+              <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                  <object class="wxFlexGridSizer">
+                    <cols>6</cols>
+                    <rows>2</rows>
+                    <object class="sizeritem">
+                      <object class="wxStaticText">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>left</label>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="ROI_LEFT"/>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxStaticText">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>right</label>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="ROI_RIGHT"/>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxStaticText">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>width</label>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="ROI_WIDTH"/>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxStaticText">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>bottom</label>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="ROI_BOTTOM"/>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxStaticText">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>top</label>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="ROI_TOP"/>
+                    </object>
+                    <hgap>5</hgap>
+                    <growablecols>1</growablecols>
+                    <growablecols>3</growablecols>
+                    <object class="sizeritem">
+                      <object class="wxStaticText">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>height</label>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="ROI_HEIGHT"/>
+                    </object>
+                  </object>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <option>1</option>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <flag>wxALL|wxEXPAND</flag>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <border>10</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxButton" name="ROI_QUERY_CAMERA">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>query camera</label>
+                      </object>
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      <flag>wxALL|wxALIGN_CENTRE</flag>
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      <border>10</border>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxButton" name="ROI_FULL_FRAME">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>full frame</label>
+                      </object>
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      <flag>wxALL|wxALIGN_CENTRE</flag>
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      <border>10</border>
+                    </object>
+                  </object>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <flag>wxALIGN_CENTRE</flag>
+                </object>
+              </object>
+            </object>
+          </object>
+        </object>
+        
+        
+        
+        
+        
+        
+        
+        
+        <option>1</option>
+        
+        
+        
+        
+        
+        
+        
+        
+        <flag>wxEXPAND</flag>
+      </object>
+      <object class="sizeritem">
+        <object class="wxStaticBoxSizer">
+          <label>Recording (stream to disk)</label>
+          <orient>wxVERTICAL</orient>
+          <object class="sizeritem">
+            <object class="wxPanel" name="CAM_RECORD_PANEL">
+              <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxStaticText">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>Record nth frame:</label>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <style>wxALIGN_RIGHT</style>
+                      </object>
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="NTH_FRAME_TEXT">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <value>1</value>
+                      </object>
+                    </object>
+                  </object>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <flag>wxALL|wxEXPAND</flag>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <border>10</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                  </object>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <option>1</option>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <flag>wxALL|wxEXPAND</flag>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxCheckBox" name="save_fno_as_timestamp">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>Save frame number as timestamp</label>
+                      </object>
+                    </object>
+                  </object>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <flag>wxALL|wxEXPAND</flag>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <border>10</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxCheckBox" name="update_display_while_saving">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>update display while saving</label>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <checked>1</checked>
+                      </object>
+                    </object>
+                  </object>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <flag>wxALL|wxEXPAND</flag>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <border>10</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxButton" name="START_RECORD_BUTTON">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>Start Recording</label>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <style>wxSUNKEN_BORDER</style>
+                      </object>
+                    </object>
+                    <object class="spacer">
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      <option>1</option>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxButton" name="STOP_RECORD_BUTTON">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <label>Stop Recording</label>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <style>wxSUNKEN_BORDER</style>
+                      </object>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+          </object>
+        </object>
+        
+        
+        
+        
+        
+        
+        
+        
+        <option>1</option>
+        
+        
+        
+        
+        
+        
+        
+        
+        <flag>wxEXPAND</flag>
+      </object>
+      <object class="sizeritem">
+        <object class="wxStaticBoxSizer">
+          <label>Camera Properties</label>
+          <orient>wxVERTICAL</orient>
+          <object class="sizeritem">
+            <object class="wxPanel" name="CAM_SETTINGS_PANEL">
+              <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                  <object class="wxPanel" name="AUTO_CAM_SETTINGS_PANEL"/>
+                  
+                  
+                  
+                  <option>1</option>
+                  
+                  
+                  
+                  <flag>wxALL|wxEXPAND</flag>
+                  
+                  
+                  
+                  <border>10</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxButton" name="QUERY_CAMERA_SETTINGS">
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    <label>query camera</label>
+                  </object>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <flag>wxALL|wxALIGN_CENTRE</flag>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <border>10</border>
+                </object>
+              </object>
+              <size>400,200</size>
+            </object>
+          
+            
+            
+            
+            
+            
+            
+            
+            <option>1</option>
+            
+            
+            
+            
+            
+            
+            
+            <flag>wxEXPAND</flag>
+          </object>
+        </object>
+        
+        
+        
+        
+        
+        
+        
+        
+        <option>1</option>
+        
+        
+        
+        
+        
+        
+        
+        
+        <flag>wxEXPAND</flag>
+      </object>
+      <vgap>4</vgap>
+      <hgap>4</hgap>
+      <growablecols>1</growablecols>
+      <growablecols>2</growablecols>
+    </object>
+  </object>
+  <object class="wxDialog" name="BACKEND_CHOICE_DIALOG">
+    <title>backend selection</title>
+    <object class="wxBoxSizer">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <object class="wxStaticText" name="CAM_IFACE_LOADED">
+              
+          <label></label>
+            </object>
+          </object>
+      <object class="sizeritem">
+        <object class="wxChoice" name="BACKEND_CHOICE">
+              
+          <content/>
+            </object>
+            
+        <flag>wxEXPAND</flag>
+          </object>
+      <object class="sizeritem">
+        <object class="wxBoxSizer">
+          <orient>wxHORIZONTAL</orient>
+          <object class="spacer">
+            
+            <size>0,0</size>
+            
+            <option>1</option>
+          </object>
+          <object class="sizeritem">
+            <object class="wxButton" name="CANCEL_BACKEND_CHOICE">
+              
+              <label>Cancel</label>
+            </object>
+            
+            <flag>wxRIGHT</flag>
+            
+            <border>30</border>
+          </object>
+          <object class="sizeritem">
+            <object class="wxButton" name="SAVE_BACKEND_CHOICE">
+              
+              <label>OK</label>
+            </object>
+          </object>
+        </object>
+        
+        <flag>wxALL|wxEXPAND</flag>
+        
+        <border>15</border>
+      </object>
+    </object>
+  </object>
+</resource>

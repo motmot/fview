@@ -1,0 +1,13 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Type=Application
+Categories=GNOME;GTK;Application;AudioVideo;
+Exec=/usr/bin/fview
+Icon=/usr/share/pycentral/python-fview/site-packages/fview/fview_icon2.png
+Name[en_US]=fview
+GenericName[en_US]=video camera record
+Comment[en_US]=
+Name=fview
+GenericName=video camera record
+Comment=Record from dc1394 device
