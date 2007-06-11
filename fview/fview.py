@@ -552,6 +552,7 @@ class InitCameraDialog(wx.Dialog):
             label.SetFont(font)
             flexgridsizer.Add(label, 0, wx.ALIGN_CENTRE|wx.ALL, 5)
 
+        self.num_buffers = []
         self.radios = []
         for idx in range(len(cam_info)):
             #label = wx.StaticText(self, -1, "Camera #%d:"%(idx+1,))
@@ -566,7 +567,11 @@ class InitCameraDialog(wx.Dialog):
             
             text = wx.TextCtrl(self, -1, str(cam_info[idx]['num_buffers']),
                                style=wx.TE_CENTRE)
-            text.Enable(False)
+            wxvt.setup_validated_integer_callback(text,
+                                                  text.GetId(),
+                                                  None)
+            self.num_buffers.append(text)
+            
             flexgridsizer.Add(text, 0, wx.ALIGN_CENTRE)
             mode_choice_strings=cam_info[idx]['mode_choice_strings']
             mode_choice = wx.Choice(self, -1, choices=mode_choice_strings)
@@ -1027,12 +1032,17 @@ class App(wx.App):
                 for mode_number in range( cam_iface.get_num_modes(idx) ):
                     mode_choice_strings.append(
                         cam_iface.get_mode_string(idx,mode_number))
-                if vendor == 'Basler' and model == 'A602f': num_buffers = 100
-                elif vendor == 'Basler' and model == 'A622f': num_buffers = 50
-                elif vendor == 'Unibrain' and model == 'Fire-i BCL 1.2': num_buffers = 100
-                elif vendor == 'Unibrain' and model == 'Fire-i BBW 1.3': num_buffers = 100
-                elif vendor == 'Point Grey Research' and model == 'Scorpion': num_buffers = 32
-                else: num_buffers = 32
+                    
+                cam_name_string = "num_buffers('%s','%s')"%(vendor,model)
+                if cam_name_string in rc_params:
+                    num_buffers = rc_params[cam_name_string]
+                else:
+                    if vendor == 'Basler' and model == 'A602f': num_buffers = 100
+                    elif vendor == 'Basler' and model == 'A622f': num_buffers = 50
+                    elif vendor == 'Unibrain' and model == 'Fire-i BCL 1.2': num_buffers = 100
+                    elif vendor == 'Unibrain' and model == 'Fire-i BBW 1.3': num_buffers = 100
+                    elif vendor == 'Point Grey Research' and model == 'Scorpion': num_buffers = 32
+                    else: num_buffers = 32
                 if sys.platform.startswith('win'):
                     num_buffers = 10 # for some reason, this seems to be the max, at least with CMU1394
                 cam_info.append( dict(vendor=vendor,
@@ -1060,9 +1070,15 @@ class App(wx.App):
             for idx in range(len(dlg.radios)):
                 if dlg.radios[idx].GetValue():
                     cam_no_selected = idx
+                    num_buffers = int(dlg.num_buffers[idx].GetValue())
         else:
             return
-        
+
+        vendor, model, chip = cam_iface.get_camera_info(cam_no_selected)
+
+        cam_name_string = "num_buffers('%s','%s')"%(vendor,model)
+        rc_params[cam_name_string] = num_buffers
+        save_rc_params()
         
         # allocate 400 MB then delete, just to get some respec' from OS:
         nx.zeros((400*1024,),nx.uint8)
@@ -1072,7 +1088,7 @@ class App(wx.App):
 
         try:
             self.cam = cam_iface.Camera(cam_no_selected,
-                                        cam_info[cam_no_selected]['num_buffers'],
+                                        num_buffers,
                                         mode_number
                                         )
         except cam_iface.CamIFaceError, x:

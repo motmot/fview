@@ -12,7 +12,7 @@ install_requires = ['cam_iface>=0.3.dev280',
                     'FlyMovieFormat',
                     'wxglvideo>=0.3.dev283',
                     'wxwrap',
-                    'wxvalidatedtext',
+                    'wxvalidatedtext>=0.4.dev46',
                     ]
 if sys.platform.startswith('linux'):
     # Not all POSIX platforms support sched_getparam().
