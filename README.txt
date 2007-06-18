@@ -23,7 +23,7 @@ at [http://www.caltech.edu/ Caltech] to record movies of flies.
    performance C code. Flexible memory allocation is possible for easy
    integration with other languages and libraries.
 
-= Limitations =
+= Current limitations =
 
 fview currently only supports a single camera. Although the plugin
 structure and the camera interface are inherently multi-camera ready,
