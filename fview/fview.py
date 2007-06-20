@@ -351,7 +351,7 @@ def grab_func(wxapp,
     finally:
         try:
             cam.close()
-        except err:
+        except Exception,err:
             print 'ERROR trying to close camera:',err
         thread_done.set()
 
