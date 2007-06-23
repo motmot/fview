@@ -22,12 +22,16 @@ import FlyMovieFormat
 
 from wxwrap import wx
 
-import wxPython.xrc as xrc
-import wxglvideo
+from wx import xrc
+
+if int(os.environ.get('FVIEW_NO_OPENGL','0')):
+    import wxvideo as video_module
+else:
+    import wxglvideo as video_module
 
 RESFILE = pkg_resources.resource_filename(__name__,"fview.xrc") # trigger extraction
 RESDIR = os.path.split(RESFILE)[0]
-RES = xrc.wxEmptyXmlResource()
+RES = xrc.EmptyXmlResource()
 RES.LoadFromString(open(RESFILE).read())
 
 def my_loadpanel(parent,panel_name):
@@ -797,7 +801,7 @@ class App(wx.App):
         box = wx.BoxSizer(wx.VERTICAL)
         main_display_panel.SetSizer(box)
 
-        self.cam_image_canvas = wxglvideo.DynamicImageCanvas(main_display_panel,-1)
+        self.cam_image_canvas = video_module.DynamicImageCanvas(main_display_panel,-1)
         self.cam_image_canvas.x_border_pixels = 0
         self.cam_image_canvas.y_border_pixels = 0
         self.cam_image_canvas.set_clipping( False ) # much faster without clipping
@@ -1126,7 +1130,8 @@ class App(wx.App):
         self.register_framerate_query_callback( self.OnReceiveFramerate )
             
         hardware_accelerated_opengl = False
-        if self.cam_image_canvas.gl_vendor.lower().startswith('nvidia'):
+        if (hasattr(self.cam_image_canvas,'gl_vendor') and
+            self.cam_image_canvas.gl_vendor.lower().startswith('nvidia')):
             hardware_accelerated_opengl = True
             # not implemented: checks for other hardware accelerated OpenGL
             
