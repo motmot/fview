@@ -972,7 +972,7 @@ class App(wx.App):
                         PluginClass = entry_point.load()
                     except Exception,x:
                         if int(os.environ.get('FVIEW_RAISE_ERRORS','0')):
-                            raise x
+                            raise
                         else:
                             import warnings
                             warnings.warn('could not load plugin %s: %s'%(str(entry_point),str(x)))
