@@ -1014,7 +1014,16 @@ class App(wx.App):
         dlg.Destroy()
 
     def OnInitCamera(self, event):
-        _need_cam_iface()
+        try:
+            _need_cam_iface()
+        except:
+            dlg = wx.MessageDialog(self.frame, 'An unknown error accessing the camera was encountered. The log file will have details.',
+                                   'FView error',
+                                   wx.OK | wx.ICON_ERROR
+                                   )
+            dlg.ShowModal()
+            dlg.Destroy()
+            raise
 
         if self.cam is not None:
             dlg = wx.MessageDialog(self.frame, 'A camera may only be initialized once',
