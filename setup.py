@@ -2,12 +2,6 @@ from setuptools import setup
 
 import os, sys
 
-from motmot_utils import get_svnversion_persistent
-version_str = '0.4.dev%(svnversion)s'
-version = get_svnversion_persistent(
-    os.path.join('fview','version.py'),
-    version_str)
-
 install_requires = ['cam_iface>=0.3.dev280',
                     'FlyMovieFormat',
                     'wxglvideo>=0.3.dev283',
@@ -20,11 +14,12 @@ if sys.platform.startswith('linux'):
     install_requires.append('posix_sched')
 
 setup(name='fview',
-      description='extensible DC1394 camera viewer program',
+      description='extensible camera viewer program (part of the motmot camera packages)',
       author='Andrew Straw',
       author_email='strawman@astraw.com',
+      url='http://code.astraw.com/projects/motmot',
       license='BSD',
-      version=version,
+      version='0.5.0',
       zip_safe=True,
       packages = ['fview'],
       install_requires = install_requires,
