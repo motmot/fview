@@ -9,7 +9,9 @@ import time, Queue, threading, os
 import sys
 
 RESFILE = pkg_resources.resource_filename(__name__,"fview_fmf_replay.xrc") # trigger extraction
-RES = xrc.wxXmlResource(RESFILE)
+RESDIR = os.path.split(RESFILE)[0]
+RES = xrc.EmptyXmlResource()
+RES.LoadFromString(open(RESFILE).read())
 
 class ReplayApp(wx.App):
     
@@ -44,52 +46,52 @@ class ReplayApp(wx.App):
         self.inq = Queue.Queue()
         self.playing = threading.Event()
 
-        ID_Timer = wx.NewId()
-        self.timer = wx.Timer(self, ID_Timer)
-        wx.EVT_TIMER(self, ID_Timer, self.OnTimer)
-        self.timer.Start(100)
+##        ID_Timer = wx.NewId()
+##        self.timer = wx.Timer(self, ID_Timer)
+##        wx.EVT_TIMER(self, ID_Timer, self.OnTimer)
+##        self.timer.Start(100)
 
         self.statusbar = self.frame.CreateStatusBar()
         self.statusbar.SetFieldsCount(2)
         self.statusbar.SetStatusText('no .fmf file loaded',0)
         return True
 
-    def OnTimer(self,event):
-        tup = None
+##    def OnTimer(self,event):
+##        tup = None
 
-        if not self.playing.isSet():
-            if self.loaded_fmf is None:
-                return
-            self.statusbar.SetStatusText('showing .fmf',1)
-            tracker = self.loaded_trx['tracker']
-            bg_image = self.loaded_trx['bg_image']
-            cam_id = self.loaded_trx['cam_id']
-            buf_offset = (0,0)
-            timestamp = 0.0
-            framenumber = 0
-            points,linesegs = tracker.process_frame(cam_id,
-                                                    bg_image,
-                                                    buf_offset,
-                                                    timestamp,
-                                                    framenumber)
-            tup = bg_image, points, linesegs
+##        if not self.playing.isSet():
+##            if self.loaded_fmf is None:
+##                return
+##            self.statusbar.SetStatusText('showing .fmf',1)
+##            tracker = self.loaded_fmf['tracker']
+##            bg_image = self.loaded_fmf['bg_image']
+##            cam_id = self.loaded_fmf['cam_id']
+##            buf_offset = (0,0)
+##            timestamp = 0.0
+##            framenumber = 0
+##            points,linesegs = tracker.process_frame(cam_id,
+##                                                    bg_image,
+##                                                    buf_offset,
+##                                                    timestamp,
+##                                                    framenumber)
+##            tup = bg_image, points, linesegs
         
-        try:
-            while 1:
-                tup = self.inq.get(0)
-                self.statusbar.SetStatusText('playing',1)
-        except Queue.Empty:
-            pass
+##        try:
+##            while 1:
+##                tup = self.inq.get(0)
+##                self.statusbar.SetStatusText('playing',1)
+##        except Queue.Empty:
+##            pass
         
-        if tup is not None:
-            im, points, linesegs = tup
-            # display on screen
-            self.cam_image_canvas.update_image_and_drawings('camera',
-                                                            im,
-                                                            format=self.loaded_trx['format'],
-                                                            points=points,
-                                                            linesegs=linesegs,
-                                                            )
+##        if tup is not None:
+##            im, points, linesegs = tup
+##            # display on screen
+##            self.cam_image_canvas.update_image_and_drawings('camera',
+##                                                            im,
+##                                                            format=self.loaded_fmf['format'],
+##                                                            points=points,
+##                                                            linesegs=linesegs,
+##                                                            )
             
             
     
@@ -101,7 +103,7 @@ class ReplayApp(wx.App):
                             )
         try:
             if dlg.ShowModal() == wx.ID_OK:
-                trx_filename = dlg.GetPath()
+                fmf_filename = dlg.GetPath()
                 doit = True
         finally:
             dlg.Destroy()
@@ -109,7 +111,7 @@ class ReplayApp(wx.App):
             return
         self.load_fmf(fmf_filename)
         
-    def load_trx(self,fmf_filename):
+    def load_fmf(self,fmf_filename):
         # clear old fmf file
         if self.loaded_fmf is not None:
             tracker = self.loaded_fmf['tracker']
@@ -133,8 +135,9 @@ class ReplayApp(wx.App):
                                              max_height=bg_image.shape[0])
         
         # save data for processing
-        self.loaded_trx = dict( fmf=fmf,
+        self.loaded_fmf = dict( fmf=fmf,
                                 n_frames=n_frames,
+                                bg_image=bg_image,
                                 cam_id=cam_id,
                                 format=format,
                                 tracker=tracker,
@@ -166,20 +169,21 @@ class ReplayApp(wx.App):
         self.play_thread.setDaemon(True)#don't let this thread keep app alive
         self.play_thread.start()
 
-def play_func(loaded_trx, im_pts_segs_q, playing ):
+def play_func(loaded_fmf, im_pts_segs_q, playing ):
     playing.set()
     try:
         n_frames = loaded_fmf['n_frames']
-        fmf = loaded_trx['fmf']
-        bg_image = loaded_trx['bg_image']
-        tracker = loaded_trx['tracker']
-        cam_id = loaded_trx['cam_id']
-        format = loaded_trx['format']
+        fmf = loaded_fmf['fmf']
+        bg_image = loaded_fmf['bg_image']
+        tracker = loaded_fmf['tracker']
+        cam_id = loaded_fmf['cam_id']
+        format = loaded_fmf['format']
 
         fmf.seek(0)
         for fno in range(n_frames):
             # reconstruct original frame #################
             fullsize_image,timestamp = fmf.get_frame(fno)
+            loaded_fmf['bg_image'] = fullsize_image
 
             # process with flytrax #################
             buf_offset=0,0
@@ -189,6 +193,8 @@ def play_func(loaded_trx, im_pts_segs_q, playing ):
                                                     buf_offset,
                                                     timestamp,
                                                     framenumber)
+            print points,framenumber
+            print
             tup = fullsize_image, points, linesegs
             im_pts_segs_q.put( tup )
             #time.sleep(1e-2)
@@ -199,7 +205,7 @@ def main():
     app = ReplayApp(0)
     if len(sys.argv) > 1:
         fmf_filename = sys.argv[1]
-        app.load_trx(fmf_filename)
+        app.load_fmf(fmf_filename)
     app.MainLoop()
     
     if app.loaded_fmf is not None:
