@@ -1,6 +1,7 @@
 from setuptools import setup
 
 import os, sys
+import fview.version
 
 install_requires = ['cam_iface>=0.3.dev280',
                     'FlyMovieFormat',
@@ -19,11 +20,13 @@ setup(name='fview',
       author_email='strawman@astraw.com',
       url='http://code.astraw.com/projects/motmot',
       license='BSD',
-      version='0.5.0',
+      version=fview.version.__version__,
       zip_safe=True,
       packages = ['fview'],
       install_requires = install_requires,
-      entry_points = {'gui_scripts': ['fview=fview:main']},
+      entry_points = {'gui_scripts': ['fview=fview:main',
+                                      'fview_fmf_replay = fview.fview_fmf_replay:main',
+                                      ]},
       package_data = {'fview':['fview.xrc','fview.gif',
                                # ImperX .xml files for config (used on Windows only)
                                'IPX-2M30-G.xml',
