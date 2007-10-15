@@ -1,4 +1,3 @@
-import flytrax
 import FlyMovieFormat
 import numpy
 from wxwrap import wx
@@ -21,9 +20,7 @@ class ReplayApp(wx.App):
         self.frame = RES.LoadFrame(None,"FVIEW_FMF_REPLAY_FRAME") # make frame main panel
         self.frame.Show()
         
-        plugins, plugin_dict = plugin_manager.load_plugins(self.frame)
-        print 'plugins',plugins
-    
+        self.plugins, plugin_dict = plugin_manager.load_plugins(self.frame)
 
         widget = xrc.XRCCTRL(self.frame,"LOAD_FMF_BUTTON")
         wx.EVT_BUTTON(widget, widget.GetId(), self.OnLoadFmf)
@@ -51,42 +48,32 @@ class ReplayApp(wx.App):
         self.inq = Queue.Queue()
         self.playing = threading.Event()
 
-##        ID_Timer = wx.NewId()
-##        self.timer = wx.Timer(self, ID_Timer)
-##        wx.EVT_TIMER(self, ID_Timer, self.OnTimer)
-##        self.timer.Start(100)
+        # initialize Tracker
+        print 'choosing first of',self.plugins
+        self.tracker = self.plugins[0] # XXX have better selection mechanism
+        self.tracker.get_frame().Show()
+        
+        wx.EVT_CLOSE(self.tracker.get_frame(),self.OnTrackerWindowClose)
+
+        ID_Timer = wx.NewId()
+        self.timer = wx.Timer(self, ID_Timer)
+        wx.EVT_TIMER(self, ID_Timer, self.OnTimer)
+        self.timer.Start(100)
 
         self.statusbar = self.frame.CreateStatusBar()
         self.statusbar.SetFieldsCount(2)
         self.statusbar.SetStatusText('no .fmf file loaded',0)
         return True
 
-##    def OnTimer(self,event):
-##        tup = None
+    def OnTimer(self,event):
+        tup = None
 
-##        if not self.playing.isSet():
-##            if self.loaded_fmf is None:
-##                return
-##            self.statusbar.SetStatusText('showing .fmf',1)
-##            tracker = self.loaded_fmf['tracker']
-##            bg_image = self.loaded_fmf['bg_image']
-##            cam_id = self.loaded_fmf['cam_id']
-##            buf_offset = (0,0)
-##            timestamp = 0.0
-##            framenumber = 0
-##            points,linesegs = tracker.process_frame(cam_id,
-##                                                    bg_image,
-##                                                    buf_offset,
-##                                                    timestamp,
-##                                                    framenumber)
-##            tup = bg_image, points, linesegs
-        
-##        try:
-##            while 1:
-##                tup = self.inq.get(0)
-##                self.statusbar.SetStatusText('playing',1)
-##        except Queue.Empty:
-##            pass
+        try:
+            while 1:
+                tup = self.inq.get(0)
+                self.statusbar.SetStatusText('playing',1)
+        except Queue.Empty:
+            pass
         
 ##        if tup is not None:
 ##            im, points, linesegs = tup
@@ -97,8 +84,6 @@ class ReplayApp(wx.App):
 ##                                                            points=points,
 ##                                                            linesegs=linesegs,
 ##                                                            )
-            
-            
     
     def OnLoadFmf(self,event):
         doit=False
@@ -117,27 +102,20 @@ class ReplayApp(wx.App):
         self.load_fmf(fmf_filename)
         
     def load_fmf(self,fmf_filename):
-        # clear old fmf file
-        if self.loaded_fmf is not None:
-            tracker = self.loaded_fmf['tracker']
-            tracker.get_frame().Destroy()
-            self.loaded_fmf = None
-            self.inq = Queue.Queue()
-
         fmf = FlyMovieFormat.FlyMovie(fmf_filename)#, check_integrity=True)
         n_frames = fmf.get_n_frames()
         cam_id='fake_camera'
         format=fmf.get_format()
         bg_image,timestamp0 = fmf.get_frame(0)
         
-        # initialize Tracker
-        tracker = flytrax.Tracker( self.frame )
-        tracker.get_frame().Show()
-        wx.EVT_CLOSE(tracker.get_frame(),self.OnTrackerWindowClose)
-        tracker.camera_starting_notification(cam_id,
-                                             pixel_format=format,
-                                             max_width=bg_image.shape[1],
-                                             max_height=bg_image.shape[0])
+        self.buf_allocator = None
+        if hasattr(self.tracker,'get_buffer_allocator'):
+            self.buf_allocator = self.tracker.get_buffer_allocator(cam_id)
+        
+        self.tracker.camera_starting_notification(cam_id,
+                                                  pixel_format=format,
+                                                  max_width=bg_image.shape[1],
+                                                  max_height=bg_image.shape[0])
         
         # save data for processing
         self.loaded_fmf = dict( fmf=fmf,
@@ -145,7 +123,7 @@ class ReplayApp(wx.App):
                                 bg_image=bg_image,
                                 cam_id=cam_id,
                                 format=format,
-                                tracker=tracker,
+                                tracker=self.tracker,
                                 )
         # new queue for each camera prevents potential confusion
         self.inq = Queue.Queue()
@@ -170,11 +148,12 @@ class ReplayApp(wx.App):
             return
         self.play_thread = threading.Thread( target=play_func, args=(self.loaded_fmf,
                                                                      self.inq,
-                                                                     self.playing) )
+                                                                     self.playing,
+                                                                     self.buf_allocator) )
         self.play_thread.setDaemon(True)#don't let this thread keep app alive
         self.play_thread.start()
 
-def play_func(loaded_fmf, im_pts_segs_q, playing ):
+def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
     playing.set()
     try:
         n_frames = loaded_fmf['n_frames']
@@ -190,11 +169,23 @@ def play_func(loaded_fmf, im_pts_segs_q, playing ):
             fullsize_image,timestamp = fmf.get_frame(fno)
             loaded_fmf['bg_image'] = fullsize_image
 
-            # process with flytrax #################
+            # process with tracker #################
             buf_offset=0,0
             framenumber=fno
+            if buf_allocator is None:
+                buf = fullsize_image
+            else:
+                # use plugin's buffer allocator
+                w = fmf.get_width() # width of stride in bytes (not necessarily pixel width)
+                h = fmf.get_height()
+                buf = buf_allocator(w,h)
+                npy_buf = numpy.asarray(buf)
+                iw = fullsize_image.shape[1]
+                for y in range(h):
+                    npy_buf[y,:iw] = fullsize_image[y,:]
+                    
             points,linesegs = tracker.process_frame(cam_id,
-                                                    fullsize_image,
+                                                    buf,
                                                     buf_offset,
                                                     timestamp,
                                                     framenumber)
@@ -214,8 +205,7 @@ def main():
     app.MainLoop()
     
     if app.loaded_fmf is not None:
-        tracker = app.loaded_fmf['tracker']
-        tracker.quit()
+        app.tracker.quit()
 
 if __name__=='__main__':
     main()
