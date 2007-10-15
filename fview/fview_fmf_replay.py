@@ -7,6 +7,7 @@ import pkg_resources
 import wxglvideo
 import time, Queue, threading, os
 import sys
+import plugin_manager
 
 RESFILE = pkg_resources.resource_filename(__name__,"fview_fmf_replay.xrc") # trigger extraction
 RESDIR = os.path.split(RESFILE)[0]
@@ -19,6 +20,10 @@ class ReplayApp(wx.App):
         wx.InitAllImageHandlers()
         self.frame = RES.LoadFrame(None,"FVIEW_FMF_REPLAY_FRAME") # make frame main panel
         self.frame.Show()
+        
+        plugins, plugin_dict = plugin_manager.load_plugins(self.frame)
+        print 'plugins',plugins
+    
 
         widget = xrc.XRCCTRL(self.frame,"LOAD_FMF_BUTTON")
         wx.EVT_BUTTON(widget, widget.GetId(), self.OnLoadFmf)

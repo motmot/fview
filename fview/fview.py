@@ -23,6 +23,7 @@ import FlyMovieFormat
 from wxwrap import wx
 
 from wx import xrc
+import plugin_manager
 
 if int(os.environ.get('FVIEW_NO_OPENGL','0')):
     import wxvideo as video_module
@@ -957,44 +958,9 @@ class App(wx.App):
         return True
 
     def _load_plugins(self):
-        PluginClasses = []
-        loaded_components = []
-        pkg_env = pkg_resources.Environment()
-        for name in pkg_env:
-            egg = pkg_env[name][0]
-            modules = []
-
-            for name in egg.get_entry_map('cam_iface.fview_plugins'):
-                egg.activate()
-                entry_point = egg.get_entry_info('cam_iface.fview_plugins', name)
-                if entry_point.module_name not in loaded_components:
-                    try:
-                        PluginClass = entry_point.load()
-                    except Exception,x:
-                        if int(os.environ.get('FVIEW_RAISE_ERRORS','0')):
-                            raise
-                        else:
-                            import warnings
-                            warnings.warn('could not load plugin %s: %s'%(str(entry_point),str(x)))
-                            continue
-                    PluginClasses.append( PluginClass )
-                    modules.append(entry_point.module_name)
-                    loaded_components.append(entry_point.module_name)
-        # make instances of plugins
-        self.plugins = [PluginClass(self.frame) for PluginClass in PluginClasses]
-        self.plugin_dict = {}
-        for plugin in self.plugins:
-            class PluginHelper:
-                def __init__(self,plugin):
-                    self.plugin = plugin
-                    self.frame = plugin.get_frame()
-                    wx.EVT_CLOSE(self.frame, self.OnWindowClose)
-                def OnWindowClose(self,event):
-                    # don't really close the window, just hide it
-                    self.frame.Show(False)
-                def OnShowFrame(self,event):
-                    self.frame.Show(True)
-            self.plugin_dict[plugin] = PluginHelper(plugin)
+        plugins, plugin_dict = plugin_manager.load_plugins(self.frame)
+        self.plugins = plugins
+        self.plugin_dict = plugin_dict
 
     def OnAboutFView(self, event):
         _need_cam_iface()
