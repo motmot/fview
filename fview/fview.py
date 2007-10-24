@@ -7,6 +7,7 @@ import pkg_resources # from setuptools
 
 from version import __version__ # fview.version
 
+import wx
 import wxvalidatedtext as wxvt
 
 # set environment variable before importing cam_iface (camwire on linux)
@@ -19,8 +20,6 @@ import cam_iface_choose
 cam_iface = None
 import numpy as nx
 import FlyMovieFormat
-
-from wxwrap import wx
 
 from wx import xrc
 import plugin_manager

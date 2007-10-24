@@ -1,5 +1,6 @@
 import pkg_resources
-from wxwrap import wx
+import wx
+import os
 
 def load_plugins(wxframe):
     PluginClasses = []
