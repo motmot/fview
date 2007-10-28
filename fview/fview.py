@@ -68,6 +68,7 @@ rc_params = get_rc_params()
 CamPropertyDataReadyEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
 CamROIDataReadyEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
 CamFramerateReadyEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
+FViewShutdownEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
 
 USE_DEBUG = False
 #USE_DEBUG = True
@@ -672,6 +673,7 @@ class App(wx.App):
     def OnInit(self,*args,**kw):
         self.save_images = 0 # save every nth image, 0 = false
         self.cam_ids = {}
+        self.exit_code = 0
         
         wx.InitAllImageHandlers()
         self.frame = wx.Frame(None, -1, "FView",size=(640,480))
@@ -953,6 +955,7 @@ class App(wx.App):
         self.Connect( -1, -1, CamPropertyDataReadyEvent, self.OnCameraPropertyDataReady )
         self.Connect( -1, -1, CamROIDataReadyEvent, self.OnCameraROIDataReady )
         self.Connect( -1, -1, CamFramerateReadyEvent, self.OnFramerateDataReady )
+        self.Connect( -1, -1, FViewShutdownEvent, self.OnQuit )
 
         return True
 
@@ -1166,11 +1169,26 @@ class App(wx.App):
         # send plugins information that camera is starting
         format = self.cam.get_pixel_coding()
         for plugin in self.plugins:
-            plugin.camera_starting_notification(
-                self.cam_ids[self.cam],
-                pixel_format=format,
-                max_width=self.cam.get_max_width(),
-                max_height=self.cam.get_max_height())
+            try:
+                plugin.camera_starting_notification(
+                    self.cam_ids[self.cam],
+                    pixel_format=format,
+                    max_width=self.cam.get_max_width(),
+                    max_height=self.cam.get_max_height())
+            except Exception, err:
+                dlg = wx.MessageDialog(self.frame,
+                                       'An FView plugin (%s) failed: %s'%(repr(plugin),str(err)),
+                                       'A plugin error has forced the shutdown of FView',
+                                       wx.OK | wx.ICON_ERROR
+                                       )
+                dlg.ShowModal()
+                dlg.Destroy()
+
+                event = wx.CommandEvent(FViewShutdownEvent)
+                event.SetEventObject(self)
+                wx.PostEvent(self, event)
+                self.exit_code = 1
+                raise
             
         self.pixel_coding = format
 
@@ -1584,6 +1602,8 @@ class App(wx.App):
         
     def OnQuit(self, dummy_event=None):
         self.frame.Close() # results in call to OnWindowClose()
+        if self.exit_code != 0:
+            sys.exit(self.exit_code)
 
     def start_streaming(self,filename,nth_frame):
         # XXX bad to cross thread boundary!
