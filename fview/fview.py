@@ -1478,7 +1478,10 @@ class App(wx.App):
             self.statusbar.SetStatusText('-',2)
 
     def OnUpdateROIPanel(self, event=None):
-        l,b,r,t=self._get_lbrt()
+        result=self._get_lbrt()
+        if result is None:
+            return
+        l,b,r,t = result
         self.ignore_text_events = True
         xrc.XRCCTRL( self.cam_roi_panel, "ROI_LEFT" ).SetValue(str(l))
         self.xrcid2validator["ROI_LEFT"].set_state('valid')
