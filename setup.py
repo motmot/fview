@@ -1,7 +1,6 @@
 from setuptools import setup
 
 import os, sys
-import fview.version
 
 install_requires = ['cam_iface>=0.3.dev280',
                     'FlyMovieFormat',
@@ -19,7 +18,7 @@ setup(name='fview',
       author_email='strawman@astraw.com',
       url='http://code.astraw.com/projects/motmot',
       license='BSD',
-      version=fview.version.__version__,
+      version='0.5.1', # keep in sync with fview/version.py
       zip_safe=True,
       packages = ['fview'],
       install_requires = install_requires,
