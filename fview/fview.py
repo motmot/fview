@@ -64,7 +64,7 @@ def save_rc_params():
     motmot_utils.config.save_rc_params(save_fname,rc_params)
 rc_params = get_rc_params()
 ########
-    
+
 CamPropertyDataReadyEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
 CamROIDataReadyEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
 CamFramerateReadyEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
@@ -139,7 +139,7 @@ def grab_func(wxapp,
               cam_cmd_queue):
     # transfer data from camera
     global in_fnt
-    
+
     def showerr(str):
         print str
 
@@ -156,7 +156,7 @@ def grab_func(wxapp,
             max_priority_enabled.set()
         except Exception, x:
             pass # not really a problem, just not in maximum priority mode
-        
+
     n_frames = 0
     good_n_frames = 0
     start = None
@@ -164,7 +164,7 @@ def grab_func(wxapp,
 
     if hasattr(cam,'set_thread_owner'):
         cam.set_thread_owner()
-    
+
     max_width = cam.get_max_width()
     max_height = cam.get_max_height()
 
@@ -182,7 +182,7 @@ def grab_func(wxapp,
         try: cam.set_frame_size(max_width,max_height)
         except cam_iface.CamIFaceError, err:
             print 'fview warning: ignoring error on set_frame_size() while trying to maximize ROI at start'
-    
+
     w,h = cam.get_frame_size()
     l,b = cam.get_frame_offset()
     xyoffset = l,b
@@ -194,9 +194,9 @@ def grab_func(wxapp,
             buf_allocator = plugin.get_buffer_allocator(cam_id)
             if buf_allocator is not None:
                 break # use first allocator
-            
+
     send_framerate = False
-    
+
     try:
         while not quit_now.isSet():
             try:
@@ -230,14 +230,14 @@ def grab_func(wxapp,
                 continue
 
             good_n_frames += 1
-            
+
             plugin_points = []
             plugin_linesegs = []
             for plugin in plugins:
                 points,linesegs = plugin.process_frame( cam_id, cam_iface_buf, xyoffset, timestamp, fno )
                 plugin_points.extend( points )
                 plugin_linesegs.extend( linesegs )
-            
+
             #buf = nx.asarray(cam_iface_buf)
             image_update_lock.acquire()
             wxapp.last_image = cam_iface_buf # frame
@@ -250,7 +250,7 @@ def grab_func(wxapp,
                 in_fnt.put( (cam_iface_buf, xyoffset, timestamp, fno) ) # save a copy of the buffer
             else:
                 showerr('ERROR: not appending new frame to queue, because it already has 1000 frames!')
-            
+
             if now - start > 1.0:
                 fps = n_frames/(now-start)
                 good_fps = good_n_frames/(now-start)
@@ -258,7 +258,7 @@ def grab_func(wxapp,
                 n_frames = 0
                 good_n_frames = 0
                 fps_value.set((fps,good_fps))
-                
+
             if framerate_value.is_new_value_waiting():
                 fr = framerate_value.get_nowait()
                 try:
@@ -278,7 +278,7 @@ def grab_func(wxapp,
                 except:
                     showerr('ignoring error setting number of framebuffers')
                 send_framerate = True
-                    
+
             try:
                 while 1:
                     cmd,cmd_payload = cam_cmd_queue.get_nowait()
@@ -339,20 +339,20 @@ def grab_func(wxapp,
                         raise ValueError('unknown command: %s'%cmd)
             except Queue.Empty:
                 pass
-            
+
             if send_framerate:
                 # framerate
                 current_framerate = cam.get_framerate()
                 trigger_mode = cam.get_trigger_mode_number()
                 num_buffers = cam.get_num_framebuffers()
-                        
+
                 framerate_get_queue.put( (current_framerate,trigger_mode,num_buffers) )
                 event = wx.CommandEvent(CamFramerateReadyEvent)
                 event.SetEventObject(wxapp)
                 wx.PostEvent(wxapp, event)
                 # do num_buffers
                 send_framerate = False
-            
+
     finally:
         try:
             cam.close()
@@ -372,10 +372,10 @@ def save_func(wxapp,
     input.
 
     """
-    
+
     # transfer data from camera
     global in_fnt
-    
+
     while not quit_now.isSet():
         try:
             while 1: # process each frame
@@ -384,9 +384,9 @@ def save_func(wxapp,
                     save_temporal_value = float(fno)
                 else:
                     save_temporal_value = timestamp
-                    
-                # lock should be held to use wxapp.save_images and wxapp.fly_movie                
-                save_info_lock.acquire() 
+
+                # lock should be held to use wxapp.save_images and wxapp.fly_movie
+                save_info_lock.acquire()
                 nth_frame = wxapp.save_images
                 if nth_frame:
                     if fno%nth_frame==0:
@@ -396,7 +396,7 @@ def save_func(wxapp,
                         #if n_frames_waiting_post-n_frames_waiting_pre>=2:
                         #    print 'WARNING: acquiring frames faster than saving (your hard drive may be too slow)'
                 save_info_lock.release()
-                        
+
         except Queue.Empty:
             pass
         time.sleep(0.1) # give other threads plenty of time
@@ -411,19 +411,19 @@ class CameraParameterHelper:
         """
         self.prop_num = prop_num
         del prop_num
-        
+
         self.fview_app = fview_app
         del fview_app
-        
+
         self.props = cam.get_camera_property_info(self.prop_num)
         if not self.props['is_present']:
             self.present = False
             return
         else:
             self.present = True
-            
+
         self.current_value, self.current_is_auto = cam.get_camera_property(self.prop_num)
-        
+
         label = self.props['name']+':'
         if self.props['is_scaled_quantity']:
             label += ' (%s)'%(self.props['scaled_unit_name'],)
@@ -458,18 +458,18 @@ class CameraParameterHelper:
         self.auto_widget.SetValue(self.current_is_auto)
         if num_auto_modes < 2:
             self.auto_widget.Enable(False)
-        
+
         wx.EVT_CHECKBOX(self.auto_widget, self.auto_widget.GetId(), self.OnToggleAuto)
-        
+
         self.other_updates = []
         self.Update()
 
         self.fview_app.register_property_query_callback( self.prop_num, self.OnReceiveProperty)
-        
+
     def OnReceiveProperty(self, value, auto):
         self.current_value, self.current_is_auto = value, auto
         self.Update()
-                           
+
     def AddToUpdate(self,ou):
         self.other_updates.append( ou )
     def Update(self, event=None):
@@ -481,14 +481,14 @@ class CameraParameterHelper:
         else:
             self.scaledtext.SetValue( str(self.current_value) )
         self.validator.set_state('valid')
-        
+
     def OnScroll(self, event):
         widget = event.GetEventObject()
         new_value = widget.GetValue()
         self.fview_app.enqueue_property_change( (self.prop_num,new_value,self.current_is_auto) )
         self.current_value = new_value
         self._UpdateSelfAndOthers()
-        
+
     def OnSetScaledValue(self,event):
         # we know this is a valid float
         widget = event.GetEventObject()
@@ -498,7 +498,7 @@ class CameraParameterHelper:
         self.fview_app.enqueue_property_change( (self.prop_num,new_value,self.current_is_auto) )
         self.current_value = new_value
         self._UpdateSelfAndOthers()
-        
+
     def OnSetRawValue(self,event):
         # we know this is a valid int
         widget = event.GetEventObject()
@@ -506,14 +506,14 @@ class CameraParameterHelper:
         self.fview_app.enqueue_property_change( (self.prop_num,new_value,self.current_is_auto) )
         self.current_value = new_value
         self._UpdateSelfAndOthers()
-        
+
     def OnToggleAuto(self, event):
         widget = event.GetEventObject()
         set_auto = widget.IsChecked()
         self.current_is_auto = set_auto
         self.fview_app.enqueue_property_change( (self.prop_num,self.current_value,set_auto) )
         self._UpdateSelfAndOthers()
-        
+
     def _UpdateSelfAndOthers(self, event=None):
         self.Update()
         for ou in self.other_updates:
@@ -535,7 +535,7 @@ class InitCameraDialog(wx.Dialog):
         label = wx.StaticText(self, -1, "Note: this program does not support hotplugging.")
         sizer.Add(label, 0, wx.ALIGN_CENTRE_HORIZONTAL|wx.ALL, 5)
         del label
-        
+
         line = wx.StaticLine(self, -1, size=(20,-1), style=wx.LI_HORIZONTAL)
         sizer.Add(line, 0, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT|wx.TOP, 5)
         del line
@@ -545,7 +545,7 @@ class InitCameraDialog(wx.Dialog):
         flexgridsizer = wx.FlexGridSizer( -1, ncols )
         for i in range(ncols):
             flexgridsizer.AddGrowableCol(i)
-        
+
         if 1:
             label = wx.StaticText(self, -1, "Camera")
             label.SetFont(font)
@@ -569,18 +569,30 @@ class InitCameraDialog(wx.Dialog):
             radio = wx.RadioButton( self, -1, this_cam_string )
             self.radios.append(radio)
             flexgridsizer.Add(radio, 0, wx.ALIGN_CENTRE)
-            
+
             text = wx.TextCtrl(self, -1, str(cam_info[idx]['num_buffers']),
                                style=wx.TE_CENTRE)
             wxvt.setup_validated_integer_callback(text,
                                                   text.GetId(),
                                                   None)
             self.num_buffers.append(text)
-            
+
             flexgridsizer.Add(text, 0, wx.ALIGN_CENTRE)
             mode_choice_strings=cam_info[idx]['mode_choice_strings']
             mode_choice = wx.Choice(self, -1, choices=mode_choice_strings)
-            mode_choice.SetSelection(0)
+            choice = 0
+            for i,mode_choice_string in enumerate(mode_choice_strings):
+                if 'DC1394_VIDEO_MODE_FORMAT7_0' in mode_choice_string:
+                    if 'YUV422' in mode_choice_string:
+                        choice = i
+                        break
+                    elif 'YUV411' in mode_choice_string:
+                        choice = i
+                        break
+                    elif 'MONO8' in mode_choice_string:
+                        choice = i
+                        break
+            mode_choice.SetSelection(choice)
             flexgridsizer.Add(mode_choice, 0, wx.ALIGN_CENTRE)
             cam_info[idx]['mode_choice_control'] = mode_choice
 
@@ -590,7 +602,7 @@ class InitCameraDialog(wx.Dialog):
         sizer.Add(line, 0, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT|wx.TOP, 5)
 
         btnsizer = wx.BoxSizer()
-        
+
         btn = wx.Button(self, wx.ID_OK, "OK")
         wx.EVT_BUTTON(btn, wx.ID_OK, self.OnOK)
         btn.SetDefault()
@@ -630,12 +642,12 @@ class BackendChoiceDialog(wx.Dialog):
                 backend_choice.Append('%s (%s)'%(backend,wrapper))
         backend_choice.SetStringSelection('%s (%s)'%(rc_params['backend'],
                                                      rc_params['wrapper']))
-        
+
         wxctrl = xrc.XRCCTRL(self,'SAVE_BACKEND_CHOICE')
         wx.EVT_BUTTON(wxctrl, wxctrl.GetId(),
                       self.OnOK)
-        
-        wxctrl = xrc.XRCCTRL(self,'CANCEL_BACKEND_CHOICE')        
+
+        wxctrl = xrc.XRCCTRL(self,'CANCEL_BACKEND_CHOICE')
         wx.EVT_BUTTON(wxctrl, wxctrl.GetId(),
                       self.OnCancel)
         self.new_backend_and_wrapper = None
@@ -648,11 +660,11 @@ class BackendChoiceDialog(wx.Dialog):
         self.new_backend_and_wrapper = (str(backend),str(wrapper))  # convert from unicode
         self.SetReturnCode(wx.ID_OK)
         self.EndModal(wx.ID_OK)
-        
+
     def OnCancel(self,event):
         self.SetReturnCode(wx.ID_CANCEL)
         self.EndModal(wx.ID_CANCEL)
-        
+
 def _need_cam_iface():
     global cam_iface
     if cam_iface is None:
@@ -668,18 +680,18 @@ def _need_cam_iface():
             cam_iface = cam_iface_choose.import_backend(backend,wrapper)
         finally:
             os.chdir(curdir)
-        
+
 class App(wx.App):
     def OnInit(self,*args,**kw):
         self.save_images = 0 # save every nth image, 0 = false
         self.cam_ids = {}
         self.exit_code = 0
-        
+
         wx.InitAllImageHandlers()
         self.frame = wx.Frame(None, -1, "FView",size=(640,480))
 
         self.xrcid2validator = {}
-        
+
         # statusbar ----------------------------------
         self.statusbar = self.frame.CreateStatusBar()
         self.statusbar.SetFieldsCount(3)
@@ -701,24 +713,24 @@ class App(wx.App):
 
             filemenu.AppendItem(wx.MenuItem(parentMenu=filemenu,
                                            kind=wx.ITEM_SEPARATOR))
-            
+
         ID_set_record_dir = wx.NewId()
         filemenu.Append(ID_set_record_dir, "set record Directory...\tCtrl-D")
         wx.EVT_MENU(self, ID_set_record_dir, self.OnSetRecordDirectory)
         self.record_dir = os.environ.get('FVIEW_SAVE_PATH','')
-        
+
         filemenu.AppendItem(wx.MenuItem(parentMenu=filemenu,
                                         kind=wx.ITEM_SEPARATOR))
-        
+
         ID_quit = wx.NewId()
         filemenu.Append(ID_quit, "Quit\tCtrl-Q", "Quit application")
         wx.EVT_MENU(self, ID_quit, self.OnQuit)
         #wx.EVT_CLOSE(self, ID_quit, self.OnQuit)
         # JAB thinks this will allow use of the window-close ('x') button
         # instead of forcing users to file->quit
-        
+
         menuBar.Append(filemenu, "&File")
-        
+
         #   Camera menu
         cameramenu = wx.Menu()
 
@@ -749,17 +761,17 @@ class App(wx.App):
         viewmenu.Append(ID_flipLR, "flip Left/Right",
                         "Flip image Left/Right", wx.ITEM_CHECK)
         wx.EVT_MENU(self, ID_flipLR, self.OnToggleFlipLR)
-        
+
         ID_set_timer = wx.NewId()
         viewmenu.Append(ID_set_timer, "set update timer...",
                         "Sets interval at which display is updated")
         wx.EVT_MENU(self, ID_set_timer, self.OnSetTimer)
-        
+
         menuBar.Append(viewmenu, "&View")
 
         # windows menu
         windowsmenu = wx.Menu()
-        
+
         ID_settings = wx.NewId()
         windowsmenu.Append(ID_settings, "Camera controls...\tCtrl-C")
         wx.EVT_MENU(self, ID_settings, self.OnOpenCameraControlsWindow)
@@ -768,7 +780,7 @@ class App(wx.App):
 
         # plugins menu
         self._load_plugins()
-        
+
         if len(self.plugins):
             windowsmenu.AppendItem(wx.MenuItem(parentMenu=windowsmenu,
                                                kind=wx.ITEM_SEPARATOR))
@@ -796,7 +808,7 @@ class App(wx.App):
         frame_box.Add(self.main_panel,1,wx.EXPAND)
         self.frame.SetSizer(frame_box)
         self.frame.Layout()
-        
+
 ##        # main panel
 
         main_display_panel = xrc.XRCCTRL(self.main_panel,"MAIN_DISPLAY_PANEL")
@@ -812,7 +824,7 @@ class App(wx.App):
         main_display_panel.Layout()
 
         # DONE WITH WX INIT STUFF
-        
+
         self.grabbed_fnt = []
 
         self.thread_done = threading.Event()
@@ -823,7 +835,7 @@ class App(wx.App):
 
         self.framerate = SharedValue()
         self.num_buffers = SharedValue()
-        
+
         self.last_measurement_time = time.time()
 
         self.last_image = None
@@ -838,12 +850,12 @@ class App(wx.App):
         self.cam_control_panel = my_loadpanel(self.cam_control_frame,"CAMERA_CONTROLS_PANEL")
         self.cam_control_panel.Fit()
         self.cam_control_frame.Fit()
-        
+
         self.cam_settings_panel = xrc.XRCCTRL( self.cam_control_panel, "CAM_SETTINGS_PANEL")
         self.cam_framerate_panel = xrc.XRCCTRL( self.cam_control_panel, "CAM_FRAMERATE_PANEL")
         self.cam_roi_panel = xrc.XRCCTRL( self.cam_control_panel, "CAM_ROI_PANEL")
         self.cam_record_panel = xrc.XRCCTRL( self.cam_control_panel, "CAM_RECORD_PANEL")
-                                             
+
         # Camera framerate frame ----------------------------
 
         wxctrl = xrc.XRCCTRL( self.cam_framerate_panel, "CAM_FRAMERATE")
@@ -860,15 +872,15 @@ class App(wx.App):
             ignore_initial_value=True)
         wxctrl = xrc.XRCCTRL( self.cam_framerate_panel, "EXTERNAL_TRIGGER_MODE")
         wx.EVT_CHOICE(wxctrl, wxctrl.GetId(), self.OnSetTriggerMode)
-        
+
         wxctrl = xrc.XRCCTRL( self.cam_framerate_panel, "CAM_FRAMERATE_QUERY")
         wx.EVT_BUTTON(wxctrl, wxctrl.GetId(), self.OnGetFramerate)
-        
+
         # Camera roi frame ----------------------------
 
         self.ignore_text_events = True
         self.roi_xrcids = ["ROI_LEFT","ROI_RIGHT","ROI_BOTTOM","ROI_TOP","ROI_WIDTH","ROI_HEIGHT"]
-        
+
         for xrcid in self.roi_xrcids:
             wxctrl = xrc.XRCCTRL( self.cam_roi_panel, xrcid)
             validator = wxvt.setup_validated_integer_callback(wxctrl,
@@ -876,7 +888,7 @@ class App(wx.App):
                                                               self.OnSetROI,
                                                               ignore_initial_value=True)
             self.xrcid2validator[xrcid] = validator
-            
+
         self.ignore_text_events = False
 
         wxctrl = xrc.XRCCTRL( self.cam_roi_panel, "ROI_QUERY_CAMERA")
@@ -888,7 +900,7 @@ class App(wx.App):
         # Camera record frame ----------------------------
 
         self.recording_fmf = None
-        
+
         wxctrl = xrc.XRCCTRL( self.cam_record_panel, "NTH_FRAME_TEXT")
         wxvt.setup_validated_integer_callback(wxctrl,
                                               wxctrl.GetId(),
@@ -897,11 +909,11 @@ class App(wx.App):
         wxctrl = xrc.XRCCTRL( self.cam_record_panel, "save_fno_as_timestamp")
         self.save_fno=wxctrl.IsChecked()
         wx.EVT_CHECKBOX(wxctrl, wxctrl.GetId(), self.OnChangeSaveFNoAsTimestamp)
-        
+
         wxctrl = xrc.XRCCTRL( self.cam_record_panel, "update_display_while_saving")
         self.update_display_while_saving = wxctrl.IsChecked()
         wx.EVT_CHECKBOX(wxctrl, wxctrl.GetId(), self.OnToggleUpdateDisplayWhileSaving)
-        
+
         wxctrl = xrc.XRCCTRL( self.cam_record_panel, "START_RECORD_BUTTON")
         wx.EVT_BUTTON(wxctrl, wxctrl.GetId(),
                    self.OnStartRecord)
@@ -917,12 +929,12 @@ class App(wx.App):
                 print 'ERROR: plugin "%s" needs set_view_rotate_180() method'%(str(plugin),)
                 continue
             plugin.set_view_rotate_180( viewmenu.IsChecked(ID_rotate180) )
-            
+
         viewmenu.Check(ID_flipLR,rc_params['flipLR'])
         self.cam_image_canvas.set_flip_LR( viewmenu.IsChecked(ID_flipLR) )
         for plugin in self.plugins:
             plugin.set_view_flip_LR( viewmenu.IsChecked(ID_flipLR) )
-        
+
         # finalize wx stuff
 
         self.frame.SetAutoLayout(True)
@@ -933,17 +945,17 @@ class App(wx.App):
         wx.EVT_CLOSE(self.frame, self.OnWindowClose)
 
         self.cam_wait_msec_wait = 100
-        
+
         ID_Timer2 = wx.NewId()
         self.timer2 = wx.Timer(self, ID_Timer2)
         wx.EVT_TIMER(self, ID_Timer2, self.OnFPS)
         self.update_interval2=5000
         self.timer2.Start(self.update_interval2)
-        
+
         ID_Timer = wx.NewId()
         self.timer = wx.Timer(self, ID_Timer)
         wx.EVT_TIMER(self, ID_Timer, self.OnUpdateCameraView)
-        self.update_interval=200            
+        self.update_interval=200
         self.timer.Start(self.update_interval)
 
         self.image_update_lock = threading.Lock()
@@ -951,7 +963,7 @@ class App(wx.App):
 
         self.cam = None
         self.update_display_while_saving = True
-        
+
         self.Connect( -1, -1, CamPropertyDataReadyEvent, self.OnCameraPropertyDataReady )
         self.Connect( -1, -1, CamROIDataReadyEvent, self.OnCameraROIDataReady )
         self.Connect( -1, -1, CamFramerateReadyEvent, self.OnFramerateDataReady )
@@ -966,7 +978,7 @@ class App(wx.App):
 
     def OnAboutFView(self, event):
         _need_cam_iface()
-        
+
         driver = cam_iface.get_driver_name()
         wrapper = cam_iface.get_wrapper_name()
         disp = 'FView %s\n'%__version__
@@ -1013,7 +1025,7 @@ class App(wx.App):
                 for mode_number in range( cam_iface.get_num_modes(idx) ):
                     mode_choice_strings.append(
                         cam_iface.get_mode_string(idx,mode_number))
-                    
+
                 cam_name_string = "num_buffers('%s','%s')"%(vendor,model)
                 if cam_name_string in rc_params:
                     num_buffers = rc_params[cam_name_string]
@@ -1040,9 +1052,9 @@ class App(wx.App):
             dlg.ShowModal()
             dlg.Destroy()
             return
-        
+
         dlg = InitCameraDialog(self.frame, -1, "Select camera & parameters",
-                               size=wx.DefaultSize, pos=wx.DefaultPosition, 
+                               size=wx.DefaultSize, pos=wx.DefaultPosition,
                                style=wx.DEFAULT_DIALOG_STYLE,
                                cam_info=cam_info)
         res = dlg.ShowModal()
@@ -1060,10 +1072,10 @@ class App(wx.App):
         cam_name_string = "num_buffers('%s','%s')"%(vendor,model)
         rc_params[cam_name_string] = num_buffers
         save_rc_params()
-        
+
         # allocate 400 MB then delete, just to get some respec' from OS:
         nx.zeros((400*1024,),nx.uint8)
-        
+
         mode_choice = cam_info[cam_no_selected]['mode_choice_control']
         mode_number = mode_choice.GetSelection()
 
@@ -1084,7 +1096,7 @@ class App(wx.App):
         format = self.cam.get_pixel_coding()
         self.statusbar.SetStatusText('Connected to %s %s (%s)'%(
             vendor, model, format),0)
-       
+
         self.property_callback_funcs = {}
         self.roi_callback_funcs = []
         self.framerate_callback_funcs = []
@@ -1095,7 +1107,7 @@ class App(wx.App):
         except cam_iface.CamIFaceError:
             print 'Error getting trigger mode number'
             trigger_mode = None
-        
+
         wxctrl = xrc.XRCCTRL( self.cam_framerate_panel, "EXTERNAL_TRIGGER_MODE")
         for i in range(self.cam.get_num_trigger_modes()):
             trigger_mode_string = self.cam.get_trigger_mode_string(i)
@@ -1105,13 +1117,13 @@ class App(wx.App):
         else:
             wxctrl.SetSelection(0)
         self.register_framerate_query_callback( self.OnReceiveFramerate )
-            
+
         hardware_accelerated_opengl = False
         if (hasattr(self.cam_image_canvas,'gl_vendor') and
             self.cam_image_canvas.gl_vendor.lower().startswith('nvidia')):
             hardware_accelerated_opengl = True
             # not implemented: checks for other hardware accelerated OpenGL
-            
+
         if hardware_accelerated_opengl:
             self.update_interval=50
             self.timer.Start(self.update_interval) # restart with new interval
@@ -1127,7 +1139,7 @@ class App(wx.App):
         self.register_roi_query_callback( self.OnReceiveROI)
         self.cam_cmd_queue.put( ('ROI query',None) )
         self.cam_cmd_queue.put( ('framerate query',None) )
-        
+
         auto_cam_settings_panel = xrc.XRCCTRL( self.cam_settings_panel, "AUTO_CAM_SETTINGS_PANEL")
         acsp_sizer = wx.FlexGridSizer(n_props) # guesstimate
         n_rows = 0
@@ -1141,7 +1153,7 @@ class App(wx.App):
             if cph.present:
                 n_rows += 1
                 cphs.append( cph )
-                
+
         if not len(cphs):
             acsp_sizer.AddGrowableCol(0)
             statictext = wx.StaticText(auto_cam_settings_panel,label='(No properties present on this camera)')
@@ -1149,12 +1161,12 @@ class App(wx.App):
             acsp_sizer.Add(statictext,1,flag=wx.ALIGN_CENTRE|wx.EXPAND)
         else:
             acsp_sizer.AddGrowableCol(1)
-                
+
         acsp_sizer.SetRows(n_rows)
         acsp_sizer.SetCols(n_cols)
         auto_cam_settings_panel.SetSizer(acsp_sizer)
         auto_cam_settings_panel.Layout()
-        
+
         for cph in cphs:
             non_self_cphs = [cph2 for cph2 in cphs if cph2 is not cph]
             for cph2 in non_self_cphs:
@@ -1189,14 +1201,14 @@ class App(wx.App):
                 wx.PostEvent(self, event)
                 self.exit_code = 1
                 raise
-            
+
         self.pixel_coding = format
 
         self.cam_max_width = self.cam.get_max_width()
         self.cam_max_height = self.cam.get_max_height()
         self.trigger_mode = self.cam.get_trigger_mode_number()
-        
-        # start threads        
+
+        # start threads
         grab_thread = threading.Thread( target=grab_func, args=(self,
                                                                 self.image_update_lock,
                                                                 self.cam,
@@ -1216,7 +1228,7 @@ class App(wx.App):
                                                                 ))
         grab_thread.setDaemon(True)
         grab_thread.start()
-        
+
         save_thread = threading.Thread( target=save_func, args=(self,
                                                                 self.save_info_lock,
                                                                 self.quit_now,
@@ -1236,7 +1248,7 @@ class App(wx.App):
                     cb_func( current_value, is_set )
         except Queue.Empty:
             pass
-        
+
     def register_roi_query_callback(self, callback_func):
         self.roi_callback_funcs.append(callback_func)
 
@@ -1252,7 +1264,7 @@ class App(wx.App):
                     cb_func( l,b,r,t )
         except Queue.Empty:
             pass
-        
+
     def OnFramerateDataReady(self, event):
         try:
             while 1:
@@ -1262,10 +1274,10 @@ class App(wx.App):
                     cb_func( current_framerate, trigger_mode, num_buffers )
         except Queue.Empty:
             pass
-        
+
     def enqueue_property_change( self, cmd):
         self.cam_cmd_queue.put( ('property change',cmd) )
-        
+
     def OnSetRecordDirectory(self, event):
 
         dlg = wx.DirDialog( self.frame, "Movie record directory",
@@ -1277,7 +1289,7 @@ class App(wx.App):
                 self.record_dir = dlg.GetPath()
         finally:
             dlg.Destroy()
-            
+
     def OnBackendChoice(self, event):
         dlg = BackendChoiceDialog(self.frame)
         try:
@@ -1289,7 +1301,7 @@ class App(wx.App):
                     save_rc_params()
         finally:
             dlg.Destroy()
-        
+
     def OnQueryCameraSettings(self, event):
         self.cam_cmd_queue.put( ('property query',None) )
 
@@ -1305,14 +1317,14 @@ class App(wx.App):
                 print 'ERROR: plugin "%s" needs set_view_rotate_180() method'%(str(plugin),)
                 continue
             plugin.set_view_rotate_180( event.IsChecked() )
-        
+
     def OnToggleFlipLR(self, event):
         self.cam_image_canvas.set_flip_LR( event.IsChecked() )
         rc_params['flipLR'] = event.IsChecked()
         save_rc_params()
         for plugin in self.plugins:
             plugin.set_view_flip_LR( event.IsChecked() )
-        
+
     def OnSetTimer(self, event):
         dlg=wx.TextEntryDialog(self.frame, 'What interval should the display be updated at (msec)?',
                               'Set display update interval',str(self.update_interval))
@@ -1354,10 +1366,10 @@ class App(wx.App):
             wxctrl.SetSelection(trigger_mode)
         else:
             wxctrl.SetSelection(0)
-        
+
     def OnGetFramerate(self, event):
         self.cam_cmd_queue.put( ('framerate query',None) )
-        
+
 ##        #framerate = self.cam.get_framerate() # XXX bad to cross thread boundary!
 ###        num_buffers = self.cam.get_num_framebuffers()
 ####        try:
@@ -1365,19 +1377,19 @@ class App(wx.App):
 ####        except cam_iface.CamIFaceError:
 ####            trigger_mode = None
 ##        trigger_mode = None
-            
+
 ##        self.ignore_text_events = True
 ####        wxctrl = xrc.XRCCTRL( self.cam_framerate_panel, "CAM_NUM_BUFFERS")
 ####        wxctrl.SetValue(str(num_buffers))
 ####        self.xrcid2validator["CAM_NUM_BUFFERS"].set_state('valid')
 ##        self.ignore_text_events = False
-        
+
 ##        wxctrl = xrc.XRCCTRL( self.cam_framerate_panel, "EXTERNAL_TRIGGER_MODE")
 ##        if trigger_mode is not None:
 ##            wxctrl.SetSelection(trigger_mode)
 ##        else:
 ##            wxctrl.SetSelection(0)
-            
+
     def OnSetNumBuffers(self, event):
         if self.ignore_text_events:
             return
@@ -1394,7 +1406,7 @@ class App(wx.App):
         val = widget.GetSelection()
 
         self.cam_cmd_queue.put(('TriggerMode Set',val))
-        
+
     def OnSetROI(self, event):
         if self.ignore_text_events:
             return
@@ -1433,28 +1445,28 @@ class App(wx.App):
             self.ignore_text_events = True # prevent infinte recursion
             widget_left.SetValue(str(l))
             self.xrcid2validator["ROI_LEFT"].set_state('valid')
-            
+
             widget_bottom.SetValue(str(b))
             self.xrcid2validator["ROI_BOTTOM"].set_state('valid')
-            
+
             widget_right.SetValue(str(r))
             self.xrcid2validator["ROI_RIGHT"].set_state('valid')
-            
+
             widget_top.SetValue(str(t))
             self.xrcid2validator["ROI_TOP"].set_state('valid')
-            
+
             widget_width.SetValue(str(w))
             self.xrcid2validator["ROI_WIDTH"].set_state('valid')
-            
+
             widget_height.SetValue(str(h))
             self.xrcid2validator["ROI_HEIGHT"].set_state('valid')
-            
+
             self.ignore_text_events = False
 
         else:
             print 'ignoring invalid ROI command',l,b,r,t
             self.OnUpdateROIPanel() # reset wx indicators
-            
+
     def OnFullFrameROI(self,event):
         lbrt = 0,0,self.cam_max_width,self.cam_max_height
         self.cam_cmd_queue.put(('ROI set',lbrt))
@@ -1463,14 +1475,14 @@ class App(wx.App):
         self._mainthread_roi = (l,b,r,t)
         self.OnQueryROI()
         self.OnUpdateROIPanel()
-        
+
     def _get_lbrt(self):
         return self._mainthread_roi
 
     def OnQueryROI(self, event=None):
         lbrt=self._get_lbrt()
         self.cam_image_canvas.set_lbrt('camera',lbrt)
-        
+
         # it's a hack to put this here, but doesn't really harm anything
         if self.max_priority_enabled.isSet():
             self.statusbar.SetStatusText('+',2)
@@ -1488,16 +1500,16 @@ class App(wx.App):
 
         xrc.XRCCTRL( self.cam_roi_panel, "ROI_BOTTOM" ).SetValue(str(b))
         self.xrcid2validator["ROI_BOTTOM"].set_state('valid')
-        
+
         xrc.XRCCTRL( self.cam_roi_panel, "ROI_RIGHT" ).SetValue(str(r))
         self.xrcid2validator["ROI_RIGHT"].set_state('valid')
-        
+
         xrc.XRCCTRL( self.cam_roi_panel, "ROI_TOP" ).SetValue(str(t))
         self.xrcid2validator["ROI_TOP"].set_state('valid')
-        
+
         xrc.XRCCTRL( self.cam_roi_panel, "ROI_WIDTH" ).SetValue(str(r-l))
         self.xrcid2validator["ROI_WIDTH"].set_state('valid')
-        
+
         xrc.XRCCTRL( self.cam_roi_panel, "ROI_HEIGHT" ).SetValue(str(t-b))
         self.xrcid2validator["ROI_HEIGHT"].set_state('valid')
 
@@ -1511,12 +1523,12 @@ class App(wx.App):
 
     def OnNthFrameChange(self,event):
         pass # do nothing
-        
+
     def OnStartRecord(self, event):
         if not self.save_images:
-            
+
             nth_frame_ctrl = xrc.XRCCTRL( self.cam_record_panel, "NTH_FRAME_TEXT")
-            
+
             try:
                 nth_frame = int(nth_frame_ctrl.GetValue())
                 if nth_frame < 1:
@@ -1528,7 +1540,7 @@ class App(wx.App):
                                        )
                 dlg.Show()
                 nth_frame = 1
-            
+
             filename = time.strftime( 'movie%Y%m%d_%H%M%S.fmf' )
             fullpath = os.path.join( self.record_dir, filename )
             self.start_streaming(fullpath,nth_frame)
@@ -1558,13 +1570,13 @@ class App(wx.App):
 
     def OnCloseCameraControlsWindow(self, evt):
         self.cam_control_frame.Show(False)
-        
+
     def OnUpdateCameraView(self, evt):
         self.app_ready.set() # tell grab thread to start
         if USE_DEBUG:
             sys.stdout.write('R')
             sys.stdout.flush()
-            
+
         if self.save_images:
             if not self.update_display_while_saving:
                 return
@@ -1582,7 +1594,7 @@ class App(wx.App):
             new_image = False
         # release lock ASAP
         self.image_update_lock.release()
-        
+
         # now draw
         if new_image:
             self.cam_image_canvas.update_image_and_drawings('camera',
@@ -1602,7 +1614,7 @@ class App(wx.App):
             plugin.quit()
         self.thread_done.wait(0.1) # block until grab thread is done...
         event.Skip() # propagate event up the chain...
-        
+
     def OnQuit(self, dummy_event=None):
         self.frame.Close() # results in call to OnWindowClose()
         if self.exit_code != 0:
@@ -1628,7 +1640,7 @@ class App(wx.App):
         self.fly_movie.close()
         self.fly_movie = None
         self.save_info_lock.release()
-        
+
 def main():
     global cam_iface
     if int(os.environ.get('FVIEW_NO_REDIRECT','0')):
