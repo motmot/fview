@@ -27,16 +27,11 @@ at [http://www.caltech.edu/ Caltech] to record movies of flies.
 
 Fview has options which can be set via environment variables. These are:
 
- * '''FVIEW_NO_REDIRECT''' Set to non-zero to direct all output to the
-console (linux) or to a pop-up window (Windows, Mac OS X).
+ * '''FVIEW_NO_REDIRECT''' Set to non-zero to direct all output to the console (linux) or to a pop-up window (Windows, Mac OS X).
 
- * '''FVIEW_NO_OPENGL''' Set to non-zero to disable use of OpenGL for
-image display. This will be slower and take more CPU time, but will
-avoid any potential bugs with the OpenGL side of things.
+ * '''FVIEW_NO_OPENGL''' Set to non-zero to disable use of OpenGL for image display. This will be slower and take more CPU time, but will avoid any potential bugs with the OpenGL side of things.
 
- * '''FVIEW_SAVE_PATH''' Set to the directory name in which to record
-movies. (This can also be set with the Menu option "File->set record
-Directory...".)
+ * '''FVIEW_SAVE_PATH''' Set to the directory name in which to record movies. (This can also be set with the Menu option "File->set record Directory...".)
 
 = Current limitations =
 
