@@ -27,7 +27,7 @@ import plugin_manager
 if int(os.environ.get('FVIEW_NO_OPENGL','0')):
     import wxvideo as video_module
 else:
-    import wxglvideo as video_module
+    import motmot.fview.fview_video as video_module
 
 RESFILE = pkg_resources.resource_filename(__name__,"fview.xrc") # trigger extraction
 RESDIR = os.path.split(RESFILE)[0]
@@ -747,11 +747,6 @@ class App(wx.App):
         # view menu
         viewmenu = wx.Menu()
 
-        ID_toggle_image_tinting = wx.NewId()
-        viewmenu.Append(ID_toggle_image_tinting, "tint clipped data",
-                        "Tints clipped pixels green", wx.ITEM_CHECK)
-        wx.EVT_MENU(self, ID_toggle_image_tinting, self.OnToggleTint)
-
         ID_rotate180 = wx.NewId()
         viewmenu.Append(ID_rotate180, "rotate 180 degrees",
                         "Rotate camera view 1800 degrees", wx.ITEM_CHECK)
@@ -818,7 +813,6 @@ class App(wx.App):
         self.cam_image_canvas = video_module.DynamicImageCanvas(main_display_panel,-1)
         self.cam_image_canvas.x_border_pixels = 0
         self.cam_image_canvas.y_border_pixels = 0
-        self.cam_image_canvas.set_clipping( False ) # much faster without clipping
         box.Add(self.cam_image_canvas,1,wx.EXPAND)
         main_display_panel.SetAutoLayout(True)
         main_display_panel.Layout()
@@ -1305,9 +1299,6 @@ class App(wx.App):
     def OnQueryCameraSettings(self, event):
         self.cam_cmd_queue.put( ('property query',None) )
 
-    def OnToggleTint(self, event):
-        self.cam_image_canvas.set_clipping( event.IsChecked() )
-
     def OnToggleRotate180(self, event):
         self.cam_image_canvas.set_rotate_180( event.IsChecked() )
         rc_params['rotate180'] = event.IsChecked()
@@ -1609,6 +1600,7 @@ class App(wx.App):
 
     def OnWindowClose(self, event):
         self.timer.Stop()
+        self.timer2.Stop()
         self.quit_now.set()
         for plugin in self.plugins:
             plugin.quit()
