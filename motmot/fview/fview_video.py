@@ -46,7 +46,7 @@ class DynamicImageCanvas(wx.Panel):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self.box)
         wx.EVT_IDLE( self, self.OnIdle )
-    
+
     def _new_child(self,id_val,image):
         child = PointDisplayCanvas(self,-1)
         child.set_fullcanvas(True)
@@ -104,12 +104,14 @@ class DynamicImageCanvas(wx.Panel):
             raise ValueError("Unknown format '%s'"%(format,))
 
         if id_val not in self.children:
+            # The line gives us:
+            #  Gtk-CRITICAL **: gtk_widget_set_colormap: assertion `!GTK_WIDGET_REALIZED (widget)' failed
             self._new_child(id_val,image)
         else:
             child = self.children[id_val]
             child.update_image(image)
             #child.extra_points_linesegs = ([],[])
-    
+
     def update_image_and_drawings(self,
                                   id_val,
                                   image,
@@ -118,7 +120,7 @@ class DynamicImageCanvas(wx.Panel):
                                   linesegs=None,
                                   xoffset=0,
                                   yoffset=0):
-        
+
         try:
             child = self.children[id_val]
         except KeyError:
@@ -126,7 +128,7 @@ class DynamicImageCanvas(wx.Panel):
             pass
         else:
             child.extra_points_linesegs = points, linesegs
-            
+
         self.update_image( id_val,
                            image,
                            format=format,
