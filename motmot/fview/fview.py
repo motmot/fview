@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 import threading, time, sys, os
 import Queue
-import motmot_utils
-import motmot_utils.config
+import motmot.utils.config
 import pkg_resources # from setuptools
 
 from version import __version__ # fview.version
@@ -16,7 +15,7 @@ A602f_conf = pkg_resources.resource_filename(__name__,'A602f.conf')
 conf_dir = os.path.split(A602f_conf)[0]
 os.environ['CAMWIRE_CONF'] = conf_dir
 
-import cam_iface_choose
+import motmot.cam_iface.choose as cam_iface_choose
 cam_iface = None
 import numpy as nx
 import FlyMovieFormat
@@ -44,7 +43,7 @@ def my_loadpanel(parent,panel_name):
     return result
 
 ########
-# persistent configuration data ( implementation in motmot_utils.config )
+# persistent configuration data ( implementation in motmot.utils.config )
 def get_rc_params():
     defaultParams = {
         'backend' : 'camwire',
@@ -52,16 +51,16 @@ def get_rc_params():
         'flipLR'  : True,
         'rotate180'  : False,
         }
-    fviewrc_fname = motmot_utils.config.rc_fname(filename='fviewrc',
+    fviewrc_fname = motmot.utils.config.rc_fname(filename='fviewrc',
                                                  dirname='.fview')
-    rc_params = motmot_utils.config.get_rc_params(fviewrc_fname,
+    rc_params = motmot.utils.config.get_rc_params(fviewrc_fname,
                                                   defaultParams)
     return rc_params
 def save_rc_params():
-    save_fname = motmot_utils.config.rc_fname(must_already_exist=False,
+    save_fname = motmot.utils.config.rc_fname(must_already_exist=False,
                                               filename='fviewrc',
                                               dirname='.fview')
-    motmot_utils.config.save_rc_params(save_fname,rc_params)
+    motmot.utils.config.save_rc_params(save_fname,rc_params)
 rc_params = get_rc_params()
 ########
 
@@ -432,7 +431,14 @@ class CameraParameterHelper:
 
         self.slider = wx.Slider(wxparent,
                                 style=wx.SL_HORIZONTAL)
-        self.slider.SetRange(self.props['min_value'],self.props['max_value'])
+
+        minv = self.props['min_value']
+        maxv = self.props['max_value']
+        if minv == maxv:
+            self.slider.SetRange(minv-1,maxv+1)
+            self.slider.Enable(False)
+        else:
+            self.slider.SetRange(minv,maxv)
         wx.EVT_COMMAND_SCROLL(self.slider, self.slider.GetId(), self.OnScroll)
 
         wxsizer.Add(self.slider,
@@ -791,7 +797,6 @@ class App(wx.App):
         wx.EVT_MENU(self, ID_helpmenu, self.OnAboutFView)
         menuBar.Append(helpmenu, "&Help")
 
-
         # finish menubar -----------------------------
         self.frame.SetMenuBar(menuBar)
 
@@ -1139,11 +1144,13 @@ class App(wx.App):
         n_rows = 0
         n_cols = 4
         for prop_num in range(n_props):
+            auto_cam_settings_panel.Hide()
             cph = CameraParameterHelper( self.cam,
                                          auto_cam_settings_panel,
                                          acsp_sizer,
                                          prop_num,
                                          self)
+            auto_cam_settings_panel.Show()
             if cph.present:
                 n_rows += 1
                 cphs.append( cph )
@@ -1181,6 +1188,7 @@ class App(wx.App):
                     pixel_format=format,
                     max_width=self.cam.get_max_width(),
                     max_height=self.cam.get_max_height())
+
             except Exception, err:
                 dlg = wx.MessageDialog(self.frame,
                                        'An FView plugin (%s) failed: %s'%(repr(plugin),str(err)),
