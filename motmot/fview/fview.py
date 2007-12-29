@@ -7,7 +7,7 @@ import pkg_resources # from setuptools
 from version import __version__ # fview.version
 
 import wx
-import wxvalidatedtext as wxvt
+import motmot.wxvalidatedtext.wxvalidatedtext as wxvt
 
 # set environment variable before importing cam_iface (camwire on linux)
 A602f_conf = pkg_resources.resource_filename(__name__,'A602f.conf')
