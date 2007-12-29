@@ -18,13 +18,13 @@ os.environ['CAMWIRE_CONF'] = conf_dir
 import motmot.cam_iface.choose as cam_iface_choose
 cam_iface = None
 import numpy as nx
-import FlyMovieFormat
+import motmot.FlyMovieFormat.FlyMovieFormat as FlyMovieFormat
 
 from wx import xrc
 import plugin_manager
 
 if int(os.environ.get('FVIEW_NO_OPENGL','0')):
-    import wxvideo as video_module
+    import motmot.wxvideo.wxvideo as video_module
 else:
     import motmot.fview.fview_video as video_module
 
