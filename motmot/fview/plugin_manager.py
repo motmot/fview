@@ -10,9 +10,9 @@ def load_plugins(wxframe):
         egg = pkg_env[name][0]
         modules = []
 
-        for name in egg.get_entry_map('cam_iface.fview_plugins'):
+        for name in egg.get_entry_map('motmot.fview.plugins'):
             egg.activate()
-            entry_point = egg.get_entry_info('cam_iface.fview_plugins', name)
+            entry_point = egg.get_entry_info('motmot.fview.plugins', name)
             if entry_point.module_name not in loaded_components:
                 try:
                     PluginClass = entry_point.load()
@@ -21,7 +21,7 @@ def load_plugins(wxframe):
                         raise
                     else:
                         import warnings
-                        warnings.warn('could not load plugin %s: %s'%(str(entry_point),str(x)))
+                        warnings.warn('could not load plugin (set env var FVIEW_RAISE_ERRORS to raise error) %s: %s'%(str(entry_point),str(x)))
                         continue
                 PluginClasses.append( PluginClass )
                 modules.append(entry_point.module_name)
