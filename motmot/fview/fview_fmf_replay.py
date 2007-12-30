@@ -1,9 +1,9 @@
-import FlyMovieFormat
+import pkg_resources
+import motmot.FlyMovieFormat.FlyMovieFormat as FlyMovieFormat
 import numpy
 import wx
 import wx.xrc as xrc
-import pkg_resources
-import wxglvideo
+import motmot.wxglvideo.wxglvideo as wxglvideo
 import time, Queue, threading, os
 import sys
 import plugin_manager
@@ -14,12 +14,12 @@ RES = xrc.EmptyXmlResource()
 RES.LoadFromString(open(RESFILE).read())
 
 class ReplayApp(wx.App):
-    
+
     def OnInit(self,*args,**kw):
         wx.InitAllImageHandlers()
         self.frame = RES.LoadFrame(None,"FVIEW_FMF_REPLAY_FRAME") # make frame main panel
         self.frame.Show()
-        
+
         self.plugins, plugin_dict = plugin_manager.load_plugins(self.frame)
 
         widget = xrc.XRCCTRL(self.frame,"LOAD_FMF_BUTTON")
@@ -52,7 +52,7 @@ class ReplayApp(wx.App):
         print 'choosing first of',self.plugins
         self.tracker = self.plugins[0] # XXX have better selection mechanism
         self.tracker.get_frame().Show()
-        
+
         wx.EVT_CLOSE(self.tracker.get_frame(),self.OnTrackerWindowClose)
 
         ID_Timer = wx.NewId()
@@ -74,7 +74,7 @@ class ReplayApp(wx.App):
                 self.statusbar.SetStatusText('playing',1)
         except Queue.Empty:
             pass
-        
+
 ##        if tup is not None:
 ##            im, points, linesegs = tup
 ##            # display on screen
@@ -84,7 +84,7 @@ class ReplayApp(wx.App):
 ##                                                            points=points,
 ##                                                            linesegs=linesegs,
 ##                                                            )
-    
+
     def OnLoadFmf(self,event):
         doit=False
         dlg = wx.FileDialog( self.frame, "Select .fmf file",
@@ -100,23 +100,23 @@ class ReplayApp(wx.App):
         if not doit:
             return
         self.load_fmf(fmf_filename)
-        
+
     def load_fmf(self,fmf_filename):
         fmf = FlyMovieFormat.FlyMovie(fmf_filename)#, check_integrity=True)
         n_frames = fmf.get_n_frames()
         cam_id='fake_camera'
         format=fmf.get_format()
         bg_image,timestamp0 = fmf.get_frame(0)
-        
+
         self.buf_allocator = None
         if hasattr(self.tracker,'get_buffer_allocator'):
             self.buf_allocator = self.tracker.get_buffer_allocator(cam_id)
-        
+
         self.tracker.camera_starting_notification(cam_id,
                                                   pixel_format=format,
                                                   max_width=bg_image.shape[1],
                                                   max_height=bg_image.shape[0])
-        
+
         # save data for processing
         self.loaded_fmf = dict( fmf=fmf,
                                 n_frames=n_frames,
@@ -138,10 +138,10 @@ class ReplayApp(wx.App):
                                                         #yoffset=last_offset[1],
                                                         )
         self.statusbar.SetStatusText('%s loaded'%(os.path.split(fmf_filename)[1],),0)
-        
+
     def OnTrackerWindowClose(self,event):
         pass # don't close window (pointless in trax_replay)
-    
+
     def OnPlayFrames(self,event):
         if self.loaded_fmf is None:
             print 'no .fmf file loaded'
@@ -183,7 +183,7 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
                 iw = fullsize_image.shape[1]
                 for y in range(h):
                     npy_buf[y,:iw] = fullsize_image[y,:]
-                    
+
             points,linesegs = tracker.process_frame(cam_id,
                                                     buf,
                                                     buf_offset,
@@ -196,14 +196,14 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
             #time.sleep(1e-2)
     finally:
         playing.clear()
-            
+
 def main():
     app = ReplayApp(0)
     if len(sys.argv) > 1:
         fmf_filename = sys.argv[1]
         app.load_fmf(fmf_filename)
     app.MainLoop()
-    
+
     if app.loaded_fmf is not None:
         app.tracker.quit()
 
