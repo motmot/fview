@@ -8,7 +8,7 @@ setup(name='motmot.fview',
       license='BSD',
       version='0.5.2', # keep in sync with motmot/fview/version.py
       zip_safe=True,
-      namespace_packages = ['motmot'],
+      namespace_packages = ['motmot','motmot.fview'],
       packages = find_packages(),
       entry_points = {'gui_scripts': ['fview=motmot.fview.fview:main',
                                       'fview_fmf_replay = motmot.fview.fview_fmf_replay:main',
