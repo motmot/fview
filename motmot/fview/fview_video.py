@@ -25,6 +25,12 @@ class PointDisplayCanvas( vid.DynamicImageCanvas ):
             gl.glVertex2f(pt[0],pt[1])
         gl.glEnd()
 
+        gl.glBegin(gl.GL_LINES)
+        for (x0,y0,x1,y1) in linesegs:
+            gl.glVertex2f(x0,y0)
+            gl.glVertex2f(x1,y1)
+        gl.glEnd()
+
         gl.glColor4f(1.0,1.0,1.0,1.0) # green point
 
     def extra_initgl(self):
