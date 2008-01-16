@@ -13,6 +13,7 @@ class PointDisplayCanvas( vid.DynamicImageCanvas ):
     def __init__(self,*args,**kw):
         super(PointDisplayCanvas, self).__init__(*args,**kw)
         self.extra_points_linesegs = ([], [])
+        self.red_points = None
 
     def core_draw(self):
         super(PointDisplayCanvas, self).core_draw()
@@ -31,7 +32,14 @@ class PointDisplayCanvas( vid.DynamicImageCanvas ):
             gl.glVertex2f(x1,y1)
         gl.glEnd()
 
-        gl.glColor4f(1.0,1.0,1.0,1.0) # green point
+        if self.red_points is not None:
+            gl.glColor4f(1.0,0.0,0.0,1.0)
+            gl.glBegin(gl.GL_POINTS)
+            for pt in self.red_points:
+                gl.glVertex2f(pt[0],pt[1])
+            gl.glEnd()
+
+        gl.glColor4f(1.0,1.0,1.0,1.0) # restore white color
 
     def extra_initgl(self):
         gl.glEnable( gl.GL_POINT_SMOOTH )
@@ -45,8 +53,6 @@ class DynamicImageCanvas(wx.Panel):
         self.flip_lr = False
 
         self.children = {}
-        self.green_points = {}
-        self.red_points = {}
         self.lbrt = {}
 
         self.box = wx.BoxSizer(wx.HORIZONTAL)
@@ -64,8 +70,6 @@ class DynamicImageCanvas(wx.Panel):
         child.set_flip_lr( self.flip_lr )
 
         self.children[id_val] = child
-        self.green_points[id_val] = []
-        self.red_points[id_val] = []
         self.lbrt[id_val] = ()
 
     def set_rotate_180(self, value):
@@ -80,11 +84,8 @@ class DynamicImageCanvas(wx.Panel):
             child = self.children[id_val]
             child.set_flip_lr(value)
 
-    def set_green_points(self,id_val,points):
-        self.green_points[id_val]=points
-
     def set_red_points(self,id_val,points):
-        self.red_points[id_val]=points
+        self.children[id_val].red_points=points
 
     def set_lbrt(self,id_val,lbrt):
         self.lbrt[id_val]=lbrt
@@ -133,7 +134,7 @@ class DynamicImageCanvas(wx.Panel):
             # XXX BUG: on the first frame for this camera, no points will be drawn
             pass
         else:
-            child.extra_points_linesegs = points, linesegs
+            child.extra_points_linesegs = (points, linesegs)
 
         self.update_image( id_val,
                            image,
