@@ -12,7 +12,7 @@ import motmot.wxglvideo.wxglvideo as vid
 class PointDisplayCanvas( vid.DynamicImageCanvas ):
     def __init__(self,*args,**kw):
         super(PointDisplayCanvas, self).__init__(*args,**kw)
-        self.extra_points_linesegs = ([], [])
+        self.extra_points_linesegs = None, None
         self.red_points = None
 
     def core_draw(self):
@@ -21,16 +21,18 @@ class PointDisplayCanvas( vid.DynamicImageCanvas ):
         points,linesegs = self.extra_points_linesegs
         gl.glColor4f(0.0,1.0,0.0,1.0) # green point
 
-        gl.glBegin(gl.GL_POINTS)
-        for pt in points:
-            gl.glVertex2f(pt[0],pt[1])
-        gl.glEnd()
+        if points is not None:
+            gl.glBegin(gl.GL_POINTS)
+            for pt in points:
+                gl.glVertex2f(pt[0],pt[1])
+            gl.glEnd()
 
-        gl.glBegin(gl.GL_LINES)
-        for (x0,y0,x1,y1) in linesegs:
-            gl.glVertex2f(x0,y0)
-            gl.glVertex2f(x1,y1)
-        gl.glEnd()
+        if linesegs is not None:
+            gl.glBegin(gl.GL_LINES)
+            for (x0,y0,x1,y1) in linesegs:
+                gl.glVertex2f(x0,y0)
+                gl.glVertex2f(x1,y1)
+            gl.glEnd()
 
         if self.red_points is not None:
             gl.glColor4f(1.0,0.0,0.0,1.0)
@@ -133,7 +135,6 @@ class DynamicImageCanvas(wx.Panel):
                                   linesegs=None,
                                   xoffset=0,
                                   yoffset=0):
-
         try:
             child = self.children[id_val]
         except KeyError:
@@ -147,11 +148,7 @@ class DynamicImageCanvas(wx.Panel):
                            format=format,
                            xoffset=xoffset,
                            yoffset=yoffset)
-        # draw points and linesegs
-        if points is None:
-            points = []
-        if linesegs is None:
-            linesegs = []
+
 
     def OnIdle(self, event):
         for id_val in self.children:
