@@ -85,7 +85,13 @@ class DynamicImageCanvas(wx.Panel):
             child.set_flip_lr(value)
 
     def set_red_points(self,id_val,points):
-        self.children[id_val].red_points=points
+        try:
+            child = self.children[id_val]
+        except KeyError:
+            # XXX BUG: on the first frame for this camera, no points will be drawn
+            pass
+        else:
+            child.red_points=points
 
     def set_lbrt(self,id_val,lbrt):
         self.lbrt[id_val]=lbrt
