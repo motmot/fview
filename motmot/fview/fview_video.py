@@ -150,6 +150,11 @@ class DynamicImageCanvas(wx.Panel):
                            yoffset=yoffset)
 
 
+    def OnDraw(self):
+        for id_val in self.children:
+            child = self.children[id_val]
+            child.OnDraw()
+
     def OnIdle(self, event):
         for id_val in self.children:
             child = self.children[id_val]
