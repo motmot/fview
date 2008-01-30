@@ -1117,16 +1117,6 @@ class App(wx.App):
             wxctrl.SetSelection(0)
         self.register_framerate_query_callback( self.OnReceiveFramerate )
 
-        hardware_accelerated_opengl = False
-        if (hasattr(self.cam_image_canvas,'gl_vendor') and
-            self.cam_image_canvas.gl_vendor.lower().startswith('nvidia')):
-            hardware_accelerated_opengl = True
-            # not implemented: checks for other hardware accelerated OpenGL
-
-        if hardware_accelerated_opengl:
-            self.update_interval=50
-            self.timer.Start(self.update_interval) # restart with new interval
-
         cphs = []
         n_props = self.cam.get_num_camera_properties()
         self.cam_prop_get_queue = Queue.Queue() # info from grab thread to GUI thread
