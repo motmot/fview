@@ -26,7 +26,7 @@ import plugin_manager
 if int(os.environ.get('FVIEW_NO_OPENGL','0')):
     import motmot.wxvideo.wxvideo as video_module
 else:
-    import motmot.fview.fview_video as video_module
+    import motmot.wxglvideo.simple_overlay as video_module
 
 RESFILE = pkg_resources.resource_filename(__name__,"fview.xrc") # trigger extraction
 RESDIR = os.path.split(RESFILE)[0]
