@@ -12,14 +12,18 @@ import motmot.wxglvideo.wxglvideo as vid
 class PointDisplayCanvas( vid.DynamicImageCanvas ):
     def __init__(self,*args,**kw):
         super(PointDisplayCanvas, self).__init__(*args,**kw)
-        self.extra_points_linesegs = None, None
+        self.extra_points_linesegs = None, None, None, None
         self.red_points = None
 
     def core_draw(self):
         super(PointDisplayCanvas, self).core_draw()
 
-        points,linesegs = self.extra_points_linesegs
+        points,point_colors, linesegs,lineseg_colors = self.extra_points_linesegs
         gl.glColor4f(0.0,1.0,0.0,1.0) # green point
+
+        if point_colors is not None:
+            import warnings
+            warnings.warn('point_colors not implemented - all your points will be green for now')
 
         if points is not None:
             gl.glBegin(gl.GL_POINTS)
@@ -28,8 +32,11 @@ class PointDisplayCanvas( vid.DynamicImageCanvas ):
             gl.glEnd()
 
         if linesegs is not None:
+            if lineseg_colors is None:
+                lineseg_colors = [ (0,1,0,1) ] * len(linesegs)
             gl.glBegin(gl.GL_LINES)
-            for (x0,y0,x1,y1) in linesegs:
+            for color_4tuple,(x0,y0,x1,y1) in zip(lineseg_colors,linesegs):
+                gl.glColor4f(*color_4tuple)
                 gl.glVertex2f(x0,y0)
                 gl.glVertex2f(x1,y1)
             gl.glEnd()
@@ -132,7 +139,9 @@ class DynamicImageCanvas(wx.Panel):
                                   image,
                                   format='MONO8',
                                   points=None,
+                                  point_colors=None,
                                   linesegs=None,
+                                  lineseg_colors=None,
                                   xoffset=0,
                                   yoffset=0):
         try:
@@ -141,7 +150,7 @@ class DynamicImageCanvas(wx.Panel):
             # XXX BUG: on the first frame for this camera, no points will be drawn
             pass
         else:
-            child.extra_points_linesegs = (points, linesegs)
+            child.extra_points_linesegs = (points, point_colors, linesegs, lineseg_colors)
 
         self.update_image( id_val,
                            image,
