@@ -66,6 +66,7 @@ rc_params = get_rc_params()
 
 CamPropertyDataReadyEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
 CamROIDataReadyEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
+ImageReadyEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
 CamFramerateReadyEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
 FViewShutdownEvent = wx.NewEventType() # use to trigger GUI thread action from grab thread
 
@@ -130,7 +131,7 @@ def grab_func(wxapp,
               fps_value,
               framerate_value,
               num_buffers_value,
-              app_ready,
+#AR              app_ready,
               plugins,
               cam_prop_get_queue,
               cam_roi_get_queue,
@@ -159,7 +160,7 @@ def grab_func(wxapp,
     n_frames = 0
     good_n_frames = 0
     start = None
-    app_ready.wait() # delay before starting camera to let wx start
+#AR    app_ready.wait() # delay before starting camera to let wx start
 
     if hasattr(cam,'set_thread_owner'):
         cam.set_thread_owner()
@@ -245,6 +246,11 @@ def grab_func(wxapp,
             wxapp.plugin_points = plugin_points
             wxapp.plugin_linesegs = plugin_linesegs
             image_update_lock.release()
+
+            event = wx.CommandEvent(ImageReadyEvent)
+            event.SetEventObject(wxapp)
+            wx.PostEvent(wxapp, event)
+
             if in_fnt.qsize() < 1000:
                 in_fnt.put( (cam_iface_buf, xyoffset, timestamp, fno) ) # save a copy of the buffer
             else:
@@ -763,11 +769,6 @@ class App(wx.App):
                         "Flip image Left/Right", wx.ITEM_CHECK)
         wx.EVT_MENU(self, ID_flipLR, self.OnToggleFlipLR)
 
-        ID_set_timer = wx.NewId()
-        viewmenu.Append(ID_set_timer, "set update timer...",
-                        "Sets interval at which display is updated")
-        wx.EVT_MENU(self, ID_set_timer, self.OnSetTimer)
-
         menuBar.Append(viewmenu, "&View")
 
         # windows menu
@@ -829,7 +830,7 @@ class App(wx.App):
         self.thread_done = threading.Event()
         self.max_priority_enabled = threading.Event()
         self.quit_now = threading.Event()
-        self.app_ready = threading.Event()
+#AR        self.app_ready = threading.Event()
         self.cam_fps_value = SharedValue()
 
         self.framerate = SharedValue()
@@ -951,12 +952,6 @@ class App(wx.App):
         self.update_interval2=5000
         self.timer2.Start(self.update_interval2)
 
-        ID_Timer = wx.NewId()
-        self.timer = wx.Timer(self, ID_Timer)
-        wx.EVT_TIMER(self, ID_Timer, self.OnUpdateCameraView)
-        self.update_interval=200
-        self.timer.Start(self.update_interval)
-
         self.image_update_lock = threading.Lock()
         self.save_info_lock = threading.Lock()
 
@@ -967,6 +962,7 @@ class App(wx.App):
         self.Connect( -1, -1, CamROIDataReadyEvent, self.OnCameraROIDataReady )
         self.Connect( -1, -1, CamFramerateReadyEvent, self.OnFramerateDataReady )
         self.Connect( -1, -1, FViewShutdownEvent, self.OnQuit )
+        self.Connect( -1, -1, ImageReadyEvent, self.OnUpdateCameraView )
 
         return True
 
@@ -1211,7 +1207,7 @@ class App(wx.App):
                                                                 self.cam_fps_value,
                                                                 self.framerate,
                                                                 self.num_buffers,
-                                                                self.app_ready,
+#AR                                                                self.app_ready,
                                                                 self.plugins,
                                                                 self.cam_prop_get_queue,
                                                                 self.cam_roi_get_queue,
@@ -1313,20 +1309,6 @@ class App(wx.App):
         save_rc_params()
         for plugin in self.plugins:
             plugin.set_view_flip_LR( event.IsChecked() )
-
-    def OnSetTimer(self, event):
-        dlg=wx.TextEntryDialog(self.frame, 'What interval should the display be updated at (msec)?',
-                              'Set display update interval',str(self.update_interval))
-        try:
-            if dlg.ShowModal() == wx.ID_OK:
-                try:
-                    self.update_interval = int(dlg.GetValue())
-                except ValueError:
-                    pass
-                else:
-                    self.timer.Start(self.update_interval)
-        finally:
-            dlg.Destroy()
 
     def OnSetFramerate(self, event):
         if self.ignore_text_events:
@@ -1561,7 +1543,7 @@ class App(wx.App):
         self.cam_control_frame.Show(False)
 
     def OnUpdateCameraView(self, evt):
-        self.app_ready.set() # tell grab thread to start
+#AR        self.app_ready.set() # tell grab thread to start
         if USE_DEBUG:
             sys.stdout.write('R')
             sys.stdout.flush()
@@ -1597,7 +1579,6 @@ class App(wx.App):
             self.cam_image_canvas.Refresh(eraseBackground=False)
 
     def OnWindowClose(self, event):
-        self.timer.Stop()
         self.timer2.Stop()
         self.quit_now.set()
         for plugin in self.plugins:
