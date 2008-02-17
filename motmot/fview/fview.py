@@ -208,6 +208,9 @@ def grab_func(wxapp,
             except cam_iface.BuffersOverflowed:
                 showerr('WARNING: buffers overflowed, frame numbers off')
                 continue
+            except cam_iface.FrameSystemCallInterruption:
+                # re-try
+                continue
             except cam_iface.FrameDataMissing:
                 #showerr('WARNING: frame data missing')
                 this_frame_has_good_data = False
