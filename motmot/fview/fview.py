@@ -701,6 +701,7 @@ class App(wx.App):
         self.save_images = 0 # save every nth image, 0 = false
         self.cam_ids = {}
         self.exit_code = 0
+        self.grab_thread = None
 
         wx.InitAllImageHandlers()
         self.frame = wx.Frame(None, -1, "FView",size=(640,480))
@@ -1219,6 +1220,7 @@ class App(wx.App):
                                                                 ))
         grab_thread.setDaemon(True)
         grab_thread.start()
+        self.grab_thread = grab_thread
 
         save_thread = threading.Thread( target=save_func, args=(self,
                                                                 self.save_info_lock,
@@ -1529,6 +1531,18 @@ class App(wx.App):
             self.statusbar.SetStatusText('',0)
 
     def OnFPS(self, evt):
+        if self.grab_thread is not None:
+            if not self.grab_thread.isAlive():
+                self.grab_thread = None # only show this once
+                dlg = wx.MessageDialog(self.frame, 'the camera thread appears to have died unexpectedly',
+                                       'FView Error',
+                                       wx.OK | wx.ICON_ERROR)
+                try:
+                    dlg.ShowModal()
+                finally:
+                    dlg.Destroy()
+
+
         fps_value = self.cam_fps_value
         if fps_value.is_new_value_waiting():
             fps,good_fps = fps_value.get_nowait()
