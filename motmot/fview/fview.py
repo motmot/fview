@@ -46,8 +46,8 @@ def my_loadpanel(parent,panel_name):
 # persistent configuration data ( implementation in motmot.utils.config )
 def get_rc_params():
     defaultParams = {
-        'backend' : 'camwire',
-        'wrapper' : 'pyrex',
+        'backend' : 'unity',
+        'wrapper' : 'ctypes',
         'flipLR'  : True,
         'rotate180'  : False,
         }
