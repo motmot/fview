@@ -1089,7 +1089,7 @@ class App(wx.App):
                                    wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             dlg.Destroy()
-            return
+            raise
         vendor, model, chip = cam_iface.get_camera_info(cam_no_selected)
         self.cam_ids[self.cam] = 'cam %d'%(len(self.cam_ids.keys())+1,)
         format = self.cam.get_pixel_coding()
