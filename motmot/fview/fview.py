@@ -105,6 +105,10 @@ class SharedValue:
         self.evt.clear()
         return val
     def get_nowait(self):
+        # XXX TODO this is not atomic and is thus dangerous.
+        # (The value could get read, then another thread could set it,
+        # and only then might it get flagged as clear by this thread,
+        # even though a new value is waiting.)
         val = self._val
         self.evt.clear()
         return val
