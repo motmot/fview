@@ -689,16 +689,7 @@ def _need_cam_iface():
     if cam_iface is None:
         wrapper = rc_params['wrapper']
         backend = rc_params['backend']
-
-        # Change temporarily to conf dir when loading cam_iface for windows
-        # .DLL to start in same directory as ImperX .xml configuration
-        # file. Yes, this is a hack.
-        curdir = os.path.abspath(os.curdir)
-        os.chdir(conf_dir)
-        try:
-            cam_iface = cam_iface_choose.import_backend(backend,wrapper)
-        finally:
-            os.chdir(curdir)
+        cam_iface = cam_iface_choose.import_backend(backend,wrapper)
 
 class App(wx.App):
     def OnInit(self,*args,**kw):
