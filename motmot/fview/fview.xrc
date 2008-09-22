@@ -47,8 +47,6 @@
   </object>
   <object class="wxPanel" name="CAMERA_CONTROLS_PANEL">
     <object class="wxFlexGridSizer">
-      <cols>2</cols>
-      <rows>2</rows>
       <object class="sizeritem">
         <object class="wxStaticBoxSizer">
           <label>Framerate and Buffer Control</label>
@@ -92,7 +90,7 @@
                     </object>
                     <object class="sizeritem">
                       <object class="wxChoice" name="EXTERNAL_TRIGGER_MODE">
-                        <content/>
+                        <size>30,-1</size>
                       </object>
                       <option>1</option>
                     </object>
@@ -326,10 +324,12 @@
         <option>1</option>
         <flag>wxEXPAND</flag>
       </object>
+      <cols>2</cols>
+      <rows>2</rows>
       <vgap>4</vgap>
       <hgap>4</hgap>
+      <growablecols>0</growablecols>
       <growablecols>1</growablecols>
-      <growablecols>2</growablecols>
       <growablerows>1</growablerows>
     </object>
   </object>
@@ -339,7 +339,7 @@
       <orient>wxVERTICAL</orient>
       <object class="sizeritem">
         <object class="wxStaticText" name="CAM_IFACE_LOADED">
-          <label></label>
+          <label/>
         </object>
       </object>
       <object class="sizeritem">

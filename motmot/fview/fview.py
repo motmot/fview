@@ -1164,6 +1164,11 @@ class App(wx.App):
                       self.OnQueryCameraSettings)
         #self.OnQueryCameraSettings(None) # query camera settings to initially fill window
 
+        # re-fit the camera control window
+        self.cam_control_panel.Fit()
+        self.cam_control_frame.Fit()
+
+
         # send plugins information that camera is starting
         format = self.cam.get_pixel_coding()
         for plugin in self.plugins:
@@ -1193,7 +1198,6 @@ class App(wx.App):
 
         self.cam_max_width = self.cam.get_max_width()
         self.cam_max_height = self.cam.get_max_height()
-        self.trigger_mode = self.cam.get_trigger_mode_number()
 
         # start threads
         grab_thread = threading.Thread( target=grab_func, args=(self,
