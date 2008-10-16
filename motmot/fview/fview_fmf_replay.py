@@ -6,7 +6,8 @@ import wx.xrc as xrc
 import motmot.wxglvideo.simple_overlay as simple_overlay
 import time, Queue, threading, os
 import sys
-import plugin_manager
+import motmot.fview.plugin_manager as plugin_manager # fview's own plugin_manager
+from optparse import OptionParser
 
 RESFILE = pkg_resources.resource_filename(__name__,"fview_fmf_replay.xrc") # trigger extraction
 RESDIR = os.path.split(RESFILE)[0]
@@ -16,11 +17,37 @@ RES.LoadFromString(open(RESFILE).read())
 class ReplayApp(wx.App):
 
     def OnInit(self,*args,**kw):
-        wx.InitAllImageHandlers()
-        self.frame = RES.LoadFrame(None,"FVIEW_FMF_REPLAY_FRAME") # make frame main panel
-        self.frame.Show()
+        usage = '%prog [options] fmf_filename'
 
+        parser = OptionParser(usage)
+
+        parser.add_option("--plugin-number", type='int',
+                          help="choose a plugin number (see with --show-plugins)",
+                          default=0)
+
+        parser.add_option("--show-plugins", action='store_true',
+                          help="show plugin numbers and names (then quit)",
+                          default=False)
+
+        parser.add_option("--quick", action='store_true',
+                          help="disable showing points and line segments, and turn off image updates",
+                          default=False)
+
+        (self.options, args) = parser.parse_args()
+
+        self.frame = RES.LoadFrame(None,"FVIEW_FMF_REPLAY_FRAME") # make frame main panel
         self.plugins, plugin_dict = plugin_manager.load_plugins(self.frame)
+
+        if self.options.show_plugins:
+            print 'plugin description'
+            print '------ -----------'
+            for i,plugin in enumerate(self.plugins):
+                print '    ',i,plugin
+            sys.exit(0)
+
+        wx.InitAllImageHandlers()
+
+        self.frame.Show()
 
         widget = xrc.XRCCTRL(self.frame,"LOAD_FMF_BUTTON")
         wx.EVT_BUTTON(widget, widget.GetId(), self.OnLoadFmf)
@@ -48,8 +75,7 @@ class ReplayApp(wx.App):
         self.playing = threading.Event()
 
         # initialize Tracker
-        print 'choosing first of',self.plugins
-        self.tracker = self.plugins[0] # XXX have better selection mechanism
+        self.tracker = self.plugins[self.options.plugin_number] # XXX have better selection mechanism
         self.tracker.get_frame().Show()
 
         wx.EVT_CLOSE(self.tracker.get_frame(),self.OnTrackerWindowClose)
@@ -62,6 +88,11 @@ class ReplayApp(wx.App):
         self.statusbar = self.frame.CreateStatusBar()
         self.statusbar.SetFieldsCount(2)
         self.statusbar.SetStatusText('no .fmf file loaded',0)
+
+        if len(args) > 0:
+            fmf_filename = args[0]
+            self.load_fmf(fmf_filename)
+
         return True
 
     def OnTimer(self,event):
@@ -74,15 +105,16 @@ class ReplayApp(wx.App):
         except Queue.Empty:
             pass
 
-##        if tup is not None:
-##            im, points, linesegs = tup
-##            # display on screen
-##            self.cam_image_canvas.update_image_and_drawings('camera',
-##                                                            im,
-##                                                            format=self.loaded_fmf['format'],
-##                                                            points=points,
-##                                                            linesegs=linesegs,
-##                                                            )
+        if not self.options.quick:
+            if tup is not None:
+                im, points, linesegs = tup
+                # display on screen
+                self.cam_image_canvas.update_image_and_drawings('camera',
+                                                                im,
+                                                                format=self.loaded_fmf['format'],
+                                                                points=points,
+                                                                linesegs=linesegs,
+                                                                )
 
     def OnLoadFmf(self,event):
         doit=False
@@ -188,8 +220,6 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
                                                     buf_offset,
                                                     timestamp,
                                                     framenumber)
-            print points,framenumber
-            print
             tup = fullsize_image, points, linesegs
             im_pts_segs_q.put( tup )
             #time.sleep(1e-2)
@@ -197,10 +227,8 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
         playing.clear()
 
 def main():
+
     app = ReplayApp(0)
-    if len(sys.argv) > 1:
-        fmf_filename = sys.argv[1]
-        app.load_fmf(fmf_filename)
     app.MainLoop()
 
     if app.loaded_fmf is not None:
