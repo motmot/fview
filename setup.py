@@ -14,6 +14,7 @@ setup(name='motmot.fview',
                                       'fview_fmf_replay = motmot.fview.fview_fmf_replay:main',
                                       ]},
       package_data = {'motmot.fview':['fview.xrc','fview.gif',
+                                      'fview_fmf_replay.xrc',
                                       # ImperX .xml files for config (used on Windows only)
                                       'IPX-2M30-G.xml',
                                       'IPX-2M30-L.xml',
@@ -26,6 +27,7 @@ setup(name='motmot.fview',
                                       'fview_icon2.png', # for .desktop icon
                                       ]},
       eager_resources = ['motmot/fview/fview.xrc','motmot/fview/fview.gif',  # unpack files together
+                         'motmot/fview/fview_fmf_replay.xrc',
                          'motmot/fview/IPX-2M30-G.xml',
                          'motmot/fview/IPX-2M30-L.xml',
                          'motmot/fview/A602f.conf',
