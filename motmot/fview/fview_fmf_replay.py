@@ -3,7 +3,7 @@ import motmot.FlyMovieFormat.FlyMovieFormat as FlyMovieFormat
 import numpy
 import wx
 import wx.xrc as xrc
-import motmot.wxglvideo.wxglvideo as wxglvideo
+import motmot.wxglvideo.simple_overlay as simple_overlay
 import time, Queue, threading, os
 import sys
 import plugin_manager
@@ -36,10 +36,9 @@ class ReplayApp(wx.App):
         box = wx.BoxSizer(wx.VERTICAL)
         main_display_panel.SetSizer(box)
 
-        self.cam_image_canvas = wxglvideo.DynamicImageCanvas(main_display_panel,-1)
+        self.cam_image_canvas = simple_overlay.DynamicImageCanvas(main_display_panel,-1)
         self.cam_image_canvas.x_border_pixels = 0
         self.cam_image_canvas.y_border_pixels = 0
-        self.cam_image_canvas.set_clipping( False ) # much faster without clipping
 
         box.Add(self.cam_image_canvas,1,wx.EXPAND)
         main_display_panel.SetAutoLayout(True)
