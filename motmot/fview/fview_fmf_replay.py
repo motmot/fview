@@ -14,6 +14,9 @@ RESDIR = os.path.split(RESFILE)[0]
 RES = xrc.EmptyXmlResource()
 RES.LoadFromString(open(RESFILE).read())
 
+global last_frame_info
+last_frame_info = None
+
 class ReplayApp(wx.App):
 
     def OnInit(self,*args,**kw):
@@ -21,8 +24,8 @@ class ReplayApp(wx.App):
 
         parser = OptionParser(usage)
 
-        parser.add_option("--plugin-number", type='int',
-                          help="choose a plugin number (see with --show-plugins)",
+        parser.add_option("--plugin", type='int',
+                          help="choose plugin (use --show-plugins first)",
                           default=0)
 
         parser.add_option("--show-plugins", action='store_true',
@@ -30,7 +33,13 @@ class ReplayApp(wx.App):
                           default=False)
 
         parser.add_option("--quick", action='store_true',
-                          help="disable showing points and line segments, and turn off image updates",
+                          help="disable showing points and line segments, and "
+                          "turn off image updates",
+                          default=False)
+
+        parser.add_option("--pump", action='store_true',
+                          help="pump frames occassionally to ensure plugin's "
+                          "process_frame() method gets called",
                           default=False)
 
         (self.options, args) = parser.parse_args()
@@ -75,8 +84,11 @@ class ReplayApp(wx.App):
         self.playing = threading.Event()
 
         # initialize Tracker
-        self.tracker = self.plugins[self.options.plugin_number] # XXX have better selection mechanism
+        self.tracker = self.plugins[self.options.plugin] # XXX have better selection mechanism
         self.tracker.get_frame().Show()
+
+        self.play_thread = None
+
 
         wx.EVT_CLOSE(self.tracker.get_frame(),self.OnTrackerWindowClose)
 
@@ -96,6 +108,8 @@ class ReplayApp(wx.App):
         return True
 
     def OnTimer(self,event):
+        global last_frame_info
+
         tup = None
 
         try:
@@ -104,6 +118,13 @@ class ReplayApp(wx.App):
                 self.statusbar.SetStatusText('playing',1)
         except Queue.Empty:
             pass
+
+        if (tup is None and
+            self.options.pump and
+            last_frame_info is not None):
+            points,linesegs = self.tracker.process_frame(*last_frame_info)
+            im = last_frame_info[1]
+            tup = im, points, linesegs
 
         if not self.options.quick:
             if tup is not None:
@@ -133,6 +154,7 @@ class ReplayApp(wx.App):
         self.load_fmf(fmf_filename)
 
     def load_fmf(self,fmf_filename):
+        global last_frame_info
         fmf = FlyMovieFormat.FlyMovie(fmf_filename)#, check_integrity=True)
         n_frames = fmf.get_n_frames()
         cam_id='fake_camera'
@@ -168,7 +190,16 @@ class ReplayApp(wx.App):
                                                         #xoffset=last_offset[0],
                                                         #yoffset=last_offset[1],
                                                         )
+
         self.statusbar.SetStatusText('%s loaded'%(os.path.split(fmf_filename)[1],),0)
+
+        if self.options.pump:
+            last_frame_info = (cam_id,
+                               bg_image,
+                               (0,0),
+                               timestamp0,
+                               0)
+
 
     def OnTrackerWindowClose(self,event):
         pass # don't close window (pointless in trax_replay)
@@ -185,6 +216,7 @@ class ReplayApp(wx.App):
         self.play_thread.start()
 
 def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
+    global last_frame_info
     playing.set()
     try:
         n_frames = loaded_fmf['n_frames']
@@ -215,11 +247,13 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
                 for y in range(h):
                     npy_buf[y,:iw] = fullsize_image[y,:]
 
-            points,linesegs = tracker.process_frame(cam_id,
-                                                    buf,
-                                                    buf_offset,
-                                                    timestamp,
-                                                    framenumber)
+            last_frame_info = (cam_id,
+                               buf,
+                               buf_offset,
+                               timestamp,
+                               framenumber)
+
+            points,linesegs = tracker.process_frame(*last_frame_info)
             tup = fullsize_image, points, linesegs
             im_pts_segs_q.put( tup )
             #time.sleep(1e-2)
