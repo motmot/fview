@@ -1415,8 +1415,6 @@ class App(wx.App):
         if (l>=0 and r<=self.cam_max_width and b>=0 and t<=self.cam_max_height):
             lbrt = l,b,r,t
             self.cam_cmd_queue.put(('ROI set',lbrt))
-            w = r-l
-            h = t-b
             self.ignore_text_events = True # prevent infinte recursion
             widget_left.SetValue(str(l))
             self.xrcid2validator["ROI_LEFT"].set_state('valid')
