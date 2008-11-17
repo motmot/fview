@@ -264,6 +264,7 @@ def grab_func(wxapp,
 
             #buf = nx.asarray(cam_iface_buf)
             image_update_lock.acquire()
+            wxapp.last_image_fullsize = (max_width,max_height)
             wxapp.last_image = cam_iface_buf # frame
             wxapp.last_offset = xyoffset
             wxapp.new_image = True
@@ -882,6 +883,7 @@ class App(wx.App):
         self.last_measurement_time = time.time()
 
         self.last_image = None
+        self.last_image_fullsize = (0,0)
         self.last_offset = 0,0
         self.new_image = False
         self.fly_movie = None
@@ -1660,6 +1662,7 @@ class App(wx.App):
         if self.new_image:
             new_image = True
             last_image = self.last_image
+            last_fullsize = self.last_image_fullsize
             last_offset = self.last_offset
             self.new_image = False
             points = self.plugin_points
@@ -1671,6 +1674,23 @@ class App(wx.App):
 
         # now draw
         if new_image:
+
+            fullw,fullh = last_fullsize
+            if last_image.shape != (fullh,fullw):
+                xoffset=last_offset[0]
+                yoffset=last_offset[1]
+                h,w=last_image.shape
+                linesegs.extend(
+                    [(xoffset,    yoffset,
+                      xoffset,    yoffset+h),
+                     (xoffset,    yoffset+h,
+                      xoffset+w,  yoffset+h),
+                     (xoffset+w,  yoffset+h,
+                      xoffset+w,  yoffset),
+                     (xoffset+w,  yoffset,
+                      xoffset,    yoffset),
+                     ] )
+
             self.cam_image_canvas.update_image_and_drawings(
                 'camera',
                 last_image,
