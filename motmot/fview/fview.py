@@ -1674,6 +1674,7 @@ class App(wx.App):
 
         # now draw
         if new_image:
+            last_image = nx.asarray(last_image) # convert to numpy view
 
             fullw,fullh = last_fullsize
             if last_image.shape != (fullh,fullw):
