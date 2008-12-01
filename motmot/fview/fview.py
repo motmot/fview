@@ -351,13 +351,14 @@ def grab_func(wxapp,
                         try:
                             # if camera needs to be stopped for these
                             # operations, do it in the driver (not all
-                            # cameras must be stopped.
+                            # cameras must be stopped).
+                            cam.set_frame_offset(l,b) # set offset first
                             cam.set_frame_size(w,h)
-                            cam.set_frame_offset(l,b)
                             xyoffset = l,b
                         except cam_iface.CamIFaceError, x:
                             # error setting frame size/offset
-                            print 'ERROR setting ROI:',x
+                            sys.stderr.write('fview ignoring error when '
+                                             'attempting to set ROI: %s\n',x)
                         else:
                             # send ROI back out to GUI thread if no error
                             cam_roi_get_queue.put( (l,b,r,t) )
