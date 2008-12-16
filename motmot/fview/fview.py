@@ -80,8 +80,8 @@ CamFramerateReadyEvent = wx.NewEventType()
 # use to trigger GUI thread action from grab thread
 FViewShutdownEvent = wx.NewEventType()
 
-USE_DEBUG = False
-#USE_DEBUG = True
+USE_DEBUG = bool(int(os.environ.get('FVIEW_DEBUG','0')))
+
 def DEBUG():
     print 'line %d thread %s'%(sys._getframe().f_back.f_lineno,
                                threading.currentThread())
