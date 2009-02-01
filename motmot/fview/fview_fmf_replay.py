@@ -28,6 +28,9 @@ class ReplayApp(wx.App):
                           help="choose plugin (use --show-plugins first)",
                           default=0)
 
+        parser.add_option("--plugin-arg", type='string',
+                          help="send string to plugin as arg")
+
         parser.add_option("--show-plugins", action='store_true',
                           help="show plugin numbers and names (then quit)",
                           default=False)
@@ -172,6 +175,9 @@ class ReplayApp(wx.App):
                                                   pixel_format=format,
                                                   max_width=bg_image.shape[1],
                                                   max_height=bg_image.shape[0])
+
+        if hasattr(self.tracker,'offline_startup_func'):
+            self.tracker.offline_startup_func(self.options.plugin_arg)
 
         # save data for processing
         self.loaded_fmf = dict( fmf=fmf,
