@@ -28,6 +28,9 @@ class ReplayApp(wx.App):
                           help="choose plugin (use --show-plugins first)",
                           default=0)
 
+        parser.add_option("--play-n-times-and-quit", type='int',
+                          help="replay movie N times, then quit")
+
         parser.add_option("--plugin-arg", type='string',
                           help="send string to plugin as arg")
 
@@ -110,6 +113,27 @@ class ReplayApp(wx.App):
         if len(args) > 0:
             fmf_filename = args[0]
             self.load_fmf(fmf_filename)
+
+        if self.options.play_n_times_and_quit is not None:
+            if self.options.play_n_times_and_quit < 2:
+                raise ValueError('must replay at least twice')
+            for i in range(self.options.play_n_times_and_quit):
+                if i==1:
+                    time_start=time.time()
+                play_func(self.loaded_fmf,
+                          self.inq,
+                          self.playing,
+                          self.buf_allocator)
+                for j in range(self.inq.qsize()):
+                    tup = self.inq.get(0)
+
+            time_stop = time.time()
+            self.frame.Close()
+            dur = time_stop-time_start
+            N = self.options.play_n_times_and_quit-1
+            Nframes = N*self.loaded_fmf['n_frames']
+            fps = Nframes/dur
+            print('After warmup, %.1f fps (%.1f msec/frame)'%(fps,1000.0/fps))
 
         return True
 
