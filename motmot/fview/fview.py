@@ -836,6 +836,9 @@ class App(wx.App):
                 windowsmenu.Append(ID_tmp, plugin_name+'...')
                 wx.EVT_MENU(self, ID_tmp, self.plugin_dict[plugin].OnShowFrame)
 
+                if hasattr(plugin,'set_all_fview_plugins'):
+                    plugin.set_all_fview_plugins(self.plugins)
+
         helpmenu = wx.Menu()
         ID_helpmenu = wx.NewId()
         helpmenu.Append(ID_helpmenu, "About")
