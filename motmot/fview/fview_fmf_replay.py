@@ -93,7 +93,10 @@ class ReplayApp(wx.App):
         if not len(self.plugins):
             raise ValueError('There are no plugins. Therefore, '
                              'there is no point in running fmf replay')
-        self.tracker = self.plugins[self.options.plugin] # XXX have better selection mechanism
+        for plugin in self.plugins:
+            if hasattr(plugin,'set_all_fview_plugins'):
+                plugin.set_all_fview_plugins(self.plugins)
+        self.tracker = self.plugins[self.options.plugin]
         self.tracker.get_frame().Show()
 
         self.play_thread = None
