@@ -25,17 +25,21 @@ __ http://www.caltech.edu/
 Features
 ========
 
-* **Plugins for realtime image analysis** Plugins to perform realimage
-  image analysis are straightforward to write, with templates included
-  to get you started quickly. Plugins have been written, for example,
-  to perform background subtraction very quickly by making use of
-  Intel's Integrated Performance Primatives (IPP) library.
+* **Plugins for realtime image analysis** -- Plugins to perform
+  realimage image analysis are straightforward to write, with
+  templates included to get you started quickly. Plugins have been
+  written, for example, to perform background subtraction very quickly
+  by making use of Intel's Integrated Performance Primatives (IPP)
+  library.
 
-* **Many supported cameras** fview uses :mod:`cam_iface` to interact
-  with cameras. This means that if you use fview, your code is
-  independent from the particular camera hardware you're using.
+* **camera trigger device with precise timing and analog input** --
+  see :ref:`this page <fview_ext_trig-overview>`
 
-* **Written in Python** Python__ is used as the "glue" that hold the
+* **Many supported cameras** -- fview uses :ref:`libcamiface` to
+  interact with cameras. This means that if you use fview, your code
+  is independent from the particular camera hardware you're using.
+
+* **Written in Python** -- Python__ is used as the "glue" that hold the
   application together -- the underlying image processing and saving
   is performed by high performance C code. Flexible memory allocation
   is possible for easy integration with other languages and libraries.
