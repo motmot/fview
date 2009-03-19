@@ -185,20 +185,15 @@ def grab_func(wxapp,
 
     cam.start_camera()
 
-    if 0:
-        # semi-hack to maximize hardware ROI on start
-        cam.set_frame_offset(0,0)
-        cam.set_frame_size(max_width,max_height)
-    else:
-        # semi-hack to maximize hardware ROI on start
-        try: cam.set_frame_offset(0,0)
-        except cam_iface.CamIFaceError, err:
-            print ('fview warning: ignoring error on set_frame_offset() '
-                   'while trying to maximize ROI at start')
-        try: cam.set_frame_size(max_width,max_height)
-        except cam_iface.CamIFaceError, err:
-            print ('fview warning: ignoring error on set_frame_size() '
-                   'while trying to maximize ROI at start')
+    # semi-hack to maximize hardware ROI on start
+    try: cam.set_frame_offset(0,0)
+    except cam_iface.CamIFaceError, err:
+        print ('fview warning: ignoring error on set_frame_offset() '
+               'while trying to maximize ROI at start')
+    try: cam.set_frame_size(max_width,max_height)
+    except cam_iface.CamIFaceError, err:
+        print ('fview warning: ignoring error on set_frame_size() '
+               'while trying to maximize ROI at start')
 
     w,h = cam.get_frame_size()
     l,b = cam.get_frame_offset()
