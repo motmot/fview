@@ -51,6 +51,7 @@ def get_rc_params():
         'wrapper' : 'ctypes',
         'flipLR'  : True,
         'rotate180'  : False,
+        'view_interval' : 1,
         }
     fviewrc_fname = motmot.utils.config.rc_fname(filename='fviewrc',
                                                  dirname='.fview')
@@ -801,6 +802,12 @@ class App(wx.App):
                         "Flip image Left/Right", wx.ITEM_CHECK)
         wx.EVT_MENU(self, ID_flipLR, self.OnToggleFlipLR)
 
+        self.update_view_num = -1
+        self.view_interval = rc_params['view_interval']
+        ID_set_view_interval = wx.NewId()
+        viewmenu.Append(ID_set_view_interval, "Set display update interval...")
+        wx.EVT_MENU(self, ID_set_view_interval, self.OnSetViewInterval)
+
         menuBar.Append(viewmenu, "&View")
 
         # windows menu
@@ -1346,6 +1353,18 @@ class App(wx.App):
     def enqueue_property_change( self, cmd):
         self.cam_cmd_queue.put( ('property change',cmd) )
 
+    def OnSetViewInterval(self,event):
+        dlg=wx.TextEntryDialog(self.frame, 'Display every Nth frame, where N is:',
+                               'Set view interval',str(self.view_interval))
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                interval = int(dlg.GetValue())
+                rc_params['view_interval'] = interval
+                save_rc_params()
+                self.view_interval = interval
+        finally:
+            dlg.Destroy()
+
     def OnSetRecordDirectory(self, event):
 
         dlg = wx.DirDialog( self.frame, "Movie record directory",
@@ -1641,6 +1660,11 @@ class App(wx.App):
 
     def OnUpdateCameraView(self, evt):
 #AR        self.app_ready.set() # tell grab thread to start
+
+        self.update_view_num += 1
+        if (self.update_view_num % self.view_interval) != 0:
+            return
+
         if USE_DEBUG:
             sys.stdout.write('R')
             sys.stdout.flush()
