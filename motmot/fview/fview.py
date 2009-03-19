@@ -186,17 +186,12 @@ def grab_func(wxapp,
     cam.start_camera()
 
     # semi-hack to maximize hardware ROI on start
-    try: cam.set_frame_offset(0,0)
+    try: cam.set_frame_roi(0,0,max_width,max_height)
     except cam_iface.CamIFaceError, err:
-        print ('fview warning: ignoring error on set_frame_offset() '
-               'while trying to maximize ROI at start')
-    try: cam.set_frame_size(max_width,max_height)
-    except cam_iface.CamIFaceError, err:
-        print ('fview warning: ignoring error on set_frame_size() '
+        print ('fview warning: ignoring error on set_frame_roi() '
                'while trying to maximize ROI at start')
 
-    w,h = cam.get_frame_size()
-    l,b = cam.get_frame_offset()
+    l,b,w,h = cam.get_frame_roi()
     xyoffset = l,b
 
     # find memory allocator from plugins (e.g. FastImage)
@@ -331,8 +326,7 @@ def grab_func(wxapp,
                         event.SetEventObject(wxapp)
                         wx.PostEvent(wxapp, event)
                     elif cmd == 'ROI query':
-                        l,b = cam.get_frame_offset()
-                        w,h = cam.get_frame_size()
+                        l,b,w,h = cam.get_frame_roi()
                         r = l+w
                         t = b+h
                         cam_roi_get_queue.put( (l,b,r,t) )
@@ -347,8 +341,7 @@ def grab_func(wxapp,
                             # if camera needs to be stopped for these
                             # operations, do it in the driver (not all
                             # cameras must be stopped).
-                            cam.set_frame_offset(l,b) # set offset first
-                            cam.set_frame_size(w,h)
+                            cam.set_frame_roi(l,b,w,h)
                             xyoffset = l,b
                         except cam_iface.CamIFaceError, x:
                             # error setting frame size/offset
