@@ -347,7 +347,7 @@ def grab_func(wxapp,
                         except cam_iface.CamIFaceError, x:
                             # error setting frame size/offset
                             sys.stderr.write('fview ignoring error when '
-                                             'attempting to set ROI: %s\n',x)
+                                             'attempting to set ROI: %s\n'%(x,))
                         else:
                             # send ROI back out to GUI thread if no error
                             cam_roi_get_queue.put( (l,b,r,t) )
