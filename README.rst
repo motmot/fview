@@ -8,6 +8,7 @@
   module: fview
   single: fview
 
+
 Overview and Usage Guide
 ========================
 
@@ -30,7 +31,7 @@ Features
   templates included to get you started quickly. Plugins have been
   written, for example, to perform background subtraction very quickly
   by making use of Intel's Integrated Performance Primatives (IPP)
-  library.
+  library. See :ref:`writing FView plugins <fview-plugin-writing>`.
 
 * **camera trigger device with precise timing and analog input** --
   see :ref:`this page <fview_ext_trig-overview>`
@@ -49,21 +50,34 @@ __ http://python.org/
 Running fview
 =============
 
-Fview has options which can be set via environment variables. These are:
+Fview has options which can be set via environment variables. These
+are:
 
-* ``FVIEW_NO_REDIRECT`` Set to non-zero to direct all output to the
-   console (linux) or to a pop-up window (Windows, Mac OS X).
+.. program:: fview
 
-* ``FVIEW_RAISE_ERRORS`` Set to non-zero to noisily die when a plugin
-  has an error. Otherwise, the plugin will be silently ignored.
+.. envvar:: FVIEW_NO_REDIRECT
 
-* ``FVIEW_NO_OPENGL`` Set to non-zero to disable use of OpenGL for
-   image display. This will be slower and take more CPU time, but will
-   avoid any potential bugs with the OpenGL side of things.
+Set to non-zero to direct all output to the console (linux) or to a
+pop-up window (Windows, Mac OS X). Otherwise, the default behavior of
+saving to fview.log.
 
-* ``FVIEW_SAVE_PATH`` Set to the directory name in which to record
-   movies. (This can also be set with the Menu option "File->set
-   record Directory...".)
+.. envvar:: FVIEW_RAISE_ERRORS
+
+If this is non-zero, it will cause FView to raise an exception and
+thus close noisily, if any of its plugins raise exceptions. Otherwise,
+the default behavior of warning about the exception and continuing
+without the plugin will be used.
+
+.. envvar:: FVIEW_NO_OPENGL
+
+Set to non-zero to disable use of OpenGL for image display. This will
+be slower and take more CPU time, but will avoid any potential bugs
+with the OpenGL side of things.
+
+.. envvar:: FVIEW_SAVE_PATH
+
+Set to the directory name in which to record movies. (This can also be
+set with the Menu option "File->set record Directory...".)
 
 Current limitations
 ===================
