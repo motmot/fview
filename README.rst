@@ -17,8 +17,7 @@ uncompressed digital video cameras. The name ''fview'' derives from
 "fly viewer" -- the software was developed within the `Dickinson
 Lab`__ at Caltech__ to record movies of flies.
 
-See the :ref:`Gallery
-<applications>` for some screenshots.
+See the :ref:`Gallery <applications>` for some screenshots.
 
 __ http://dickinson.caltech.edu/
 __ http://www.caltech.edu/
