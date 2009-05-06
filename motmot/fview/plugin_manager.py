@@ -33,7 +33,7 @@ def load_plugins(wxframe):
                               '%s'%( name, x, formatted_error )
                         dlg = wx.MessageDialog(wxframe, msg,
                                                'FView plugin error',
-                                               wx.OK | wx.ICON_ERROR)
+                                               wx.OK | wx.ICON_WARNING)
                         dlg.ShowModal()
                         dlg.Destroy()
                         continue
