@@ -1,1 +1,1 @@
-__version__='0.5.3' # keep in sync with setup.py!
+__version__='0.5.4' # keep in sync with setup.py!
