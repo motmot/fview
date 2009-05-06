@@ -1,6 +1,7 @@
 import pkg_resources
 import wx
 import os
+import warnings, traceback
 
 def load_plugins(wxframe):
     PluginClasses = []
@@ -20,8 +21,21 @@ def load_plugins(wxframe):
                     if int(os.environ.get('FVIEW_RAISE_ERRORS','0')):
                         raise
                     else:
-                        import warnings
-                        warnings.warn('could not load plugin (set env var FVIEW_RAISE_ERRORS to raise error) %s: %s'%(str(entry_point),str(x)))
+                        formatted_error = traceback.format_exc(x)
+                        warnings.warn('could not load plugin (set env var '
+                                      'FVIEW_RAISE_ERRORS to raise error) '
+                                      '%s: %s\n%s'%(str(entry_point),str(x),
+                                                    formatted_error))
+                        msg = 'While attempting to open the plugin "%s",\n' \
+                              'FView encountered an error. The error is:\n\n' \
+                              '%s\n\n' \
+                              'More details:\n' \
+                              '%s'%( name, x, formatted_error )
+                        dlg = wx.MessageDialog(wxframe, msg,
+                                               'FView plugin error',
+                                               wx.OK | wx.ICON_ERROR)
+                        dlg.ShowModal()
+                        dlg.Destroy()
                         continue
                 PluginClasses.append( PluginClass )
                 modules.append(entry_point.module_name)
