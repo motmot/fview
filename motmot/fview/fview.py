@@ -702,7 +702,6 @@ class BackendChoiceDialog(wx.Dialog):
         wx.EVT_BUTTON(wxctrl, wxctrl.GetId(),
                       self.OnCancel)
         self.new_backend_and_wrapper = None
-        self.shutdown_error_info = None
 
     def OnOK(self,event):
         wxctrl = xrc.XRCCTRL(self,'BACKEND_CHOICE')
@@ -731,6 +730,7 @@ class App(wx.App):
         self.cam_ids = {}
         self.exit_code = 0
         self.grab_thread = None
+        self.shutdown_error_info = None
 
         wx.InitAllImageHandlers()
         self.frame = wx.Frame(None, -1, "FView",size=(640,480))
