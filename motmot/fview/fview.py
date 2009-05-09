@@ -22,6 +22,7 @@ import motmot.FlyMovieFormat.FlyMovieFormat as FlyMovieFormat
 
 from wx import xrc
 import plugin_manager
+import traceback
 
 if int(os.environ.get('FVIEW_NO_OPENGL','0')):
     import motmot.wxvideo.wxvideo as video_module
@@ -1052,263 +1053,267 @@ class App(wx.App):
     def OnInitCamera(self, event):
         try:
             _need_cam_iface()
-        except:
-            dlg = wx.MessageDialog(
-                self.frame, ('An unknown error accessing the camera was '
-                             'encountered. The log file will have details.'),
-                'FView error',
-                wx.OK | wx.ICON_ERROR
-                )
-            dlg.ShowModal()
-            dlg.Destroy()
-            raise
 
-        if self.cam is not None:
-            dlg = wx.MessageDialog(
-                self.frame, 'A camera may only be initialized once',
-                'FView error',
-                wx.OK | wx.ICON_ERROR
-                )
-            dlg.ShowModal()
-            dlg.Destroy()
-            return
-
-        driver_name = cam_iface.get_driver_name()
-        num_cameras = cam_iface.get_num_cameras()
-
-        cam_info = []
-        try:
-            for idx in range(num_cameras):
-                vendor, model, chip = cam_iface.get_camera_info(idx)
-                mode_choice_strings = []
-                for mode_number in range( cam_iface.get_num_modes(idx) ):
-                    mode_choice_strings.append(
-                        cam_iface.get_mode_string(idx,mode_number))
-
-                cam_name_string = "num_buffers('%s','%s')"%(vendor,model)
-                if cam_name_string in rc_params:
-                    num_buffers = rc_params[cam_name_string]
-                else:
-                    if vendor == 'Basler' and model == 'A602f':
-                        num_buffers = 100
-                    elif vendor == 'Basler' and model == 'A622f':
-                        num_buffers = 50
-                    elif vendor == 'Unibrain' and model == 'Fire-i BCL 1.2':
-                        num_buffers = 100
-                    elif vendor == 'Unibrain' and model == 'Fire-i BBW 1.3':
-                        num_buffers = 100
-                    elif vendor == 'Point Grey Research' and model=='Scorpion':
-                        num_buffers = 32
-                    else:
-                        num_buffers = 32
-                if sys.platform.startswith('win'):
-                    num_buffers = 10 # for some reason, this seems to be the max, at least with CMU1394
-                cam_info.append( dict(vendor=vendor,
-                                      model=model,
-                                      chip=chip,
-                                      num_buffers=num_buffers,
-                                      mode_choice_strings=mode_choice_strings,
-                                      ) )
-            # closes for loop
-        except cam_iface.CamIFaceError, x:
-            dlg = wx.MessageDialog(self.frame, str(x),
-                                   'Error getting camera information',
-                                   wx.OK | wx.ICON_ERROR)
-            dlg.ShowModal()
-            dlg.Destroy()
-            return
-
-        dlg = InitCameraDialog(self.frame, -1, "Select camera & parameters",
-                               size=wx.DefaultSize, pos=wx.DefaultPosition,
-                               style=wx.DEFAULT_DIALOG_STYLE,
-                               cam_info=cam_info)
-        res = dlg.ShowModal()
-        cam_no_selected = None
-        if res == wx.ID_OK and len(dlg.radios):
-            for idx in range(len(dlg.radios)):
-                if dlg.radios[idx].GetValue():
-                    cam_no_selected = idx
-                    num_buffers = int(dlg.num_buffers[idx].GetValue())
-        else:
-            return
-
-        vendor, model, chip = cam_iface.get_camera_info(cam_no_selected)
-
-        cam_name_string = "num_buffers('%s','%s')"%(vendor,model)
-        rc_params[cam_name_string] = num_buffers
-        save_rc_params()
-
-        # allocate 400 MB then delete, just to get some respec' from OS:
-        nx.zeros((400*1024,),nx.uint8)
-
-        mode_choice = cam_info[cam_no_selected]['mode_choice_control']
-        mode_number = mode_choice.GetSelection()
-
-        try:
-            self.cam = cam_iface.Camera(cam_no_selected,
-                                        num_buffers,
-                                        mode_number
-                                        )
-        except cam_iface.CamIFaceError, x:
-            dlg = wx.MessageDialog(self.frame, str(x),
-                                   'Error opening camera',
-                                   wx.OK | wx.ICON_ERROR)
-            dlg.ShowModal()
-            dlg.Destroy()
-            raise
-        vendor, model, chip = cam_iface.get_camera_info(cam_no_selected)
-        self.cam_ids[self.cam] = 'cam %d'%(len(self.cam_ids.keys())+1,)
-        format = self.cam.get_pixel_coding()
-        self.statusbar.SetStatusText('Connected to %s %s (%s)'%(
-            vendor, model, format),0)
-
-        self.property_callback_funcs = {}
-        self.roi_callback_funcs = []
-        self.framerate_callback_funcs = []
-
-        # set external trigger modes
-        try:
-            trigger_mode = self.cam.get_trigger_mode_number()
-        except cam_iface.CamIFaceError:
-            print 'Error getting trigger mode number'
-            trigger_mode = None
-
-        wxctrl = xrc.XRCCTRL( self.cam_framerate_panel, "EXTERNAL_TRIGGER_MODE")
-        for i in range(self.cam.get_num_trigger_modes()):
-            trigger_mode_string = self.cam.get_trigger_mode_string(i)
-            wxctrl.Append(trigger_mode_string)
-        if trigger_mode is not None:
-            wxctrl.SetSelection(trigger_mode)
-        else:
-            wxctrl.SetSelection(0)
-        self.register_framerate_query_callback( self.OnReceiveFramerate )
-
-        cphs = []
-        n_props = self.cam.get_num_camera_properties()
-
-        # info from grab thread to GUI thread
-        self.cam_prop_get_queue = Queue.Queue()
-        self.cam_roi_get_queue = Queue.Queue()
-        self.framerate_get_queue = Queue.Queue()
-
-        # commands from GUI thread to grab thread
-        self.cam_cmd_queue = Queue.Queue()
-
-        self._mainthread_roi = None
-        self.register_roi_query_callback( self.OnReceiveROI)
-        self.cam_cmd_queue.put( ('ROI query',None) )
-        self.cam_cmd_queue.put( ('framerate query',None) )
-
-        auto_cam_settings_panel = xrc.XRCCTRL(
-            self.cam_settings_panel, "AUTO_CAM_SETTINGS_PANEL")
-        acsp_sizer = wx.FlexGridSizer(n_props) # guesstimate
-        n_rows = 0
-        n_cols = 4
-        for prop_num in range(n_props):
-            auto_cam_settings_panel.Hide()
-            cph = CameraParameterHelper( self.cam,
-                                         auto_cam_settings_panel,
-                                         acsp_sizer,
-                                         prop_num,
-                                         self)
-            auto_cam_settings_panel.Show()
-            if cph.present:
-                n_rows += 1
-                cphs.append( cph )
-
-        if not len(cphs):
-            acsp_sizer.AddGrowableCol(0)
-            statictext = wx.StaticText(
-                auto_cam_settings_panel,
-                label='(No properties present on this camera)')
-            n_rows += 1
-            acsp_sizer.Add(statictext,1,flag=wx.ALIGN_CENTRE|wx.EXPAND)
-        else:
-            acsp_sizer.AddGrowableCol(1)
-
-        acsp_sizer.SetRows(n_rows)
-        acsp_sizer.SetCols(n_cols)
-        auto_cam_settings_panel.SetSizer(acsp_sizer)
-        auto_cam_settings_panel.Layout()
-
-        for cph in cphs:
-            non_self_cphs = [cph2 for cph2 in cphs if cph2 is not cph]
-            for cph2 in non_self_cphs:
-                cph.AddToUpdate( cph2 )
-
-        self.cam_param_helpers = cphs
-        wxctrl = xrc.XRCCTRL( self.cam_settings_panel, "QUERY_CAMERA_SETTINGS")
-        wx.EVT_BUTTON(wxctrl, wxctrl.GetId(),
-                      self.OnQueryCameraSettings)
-
-        # query camera settings to initially fill window
-        #self.OnQueryCameraSettings(None)
-
-        # re-fit the camera control window
-        self.cam_control_panel.Fit()
-        self.cam_control_frame.Fit()
-
-
-        # send plugins information that camera is starting
-        format = self.cam.get_pixel_coding()
-        for plugin in self.plugins:
-            try:
-                plugin.camera_starting_notification(
-                    self.cam_ids[self.cam],
-                    pixel_format=format,
-                    max_width=self.cam.get_max_width(),
-                    max_height=self.cam.get_max_height())
-
-            except Exception, err:
+            if self.cam is not None:
                 dlg = wx.MessageDialog(
-                    self.frame,
-                    'An FView plugin (%s) failed: %s'%(repr(plugin),str(err)),
-                    'A plugin error has forced the shutdown of FView',
+                    self.frame, 'A camera may only be initialized once',
+                    'FView error',
                     wx.OK | wx.ICON_ERROR
                     )
                 dlg.ShowModal()
                 dlg.Destroy()
+                return
 
-                event = wx.CommandEvent(FViewShutdownEvent)
-                event.SetEventObject(self)
-                wx.PostEvent(self, event)
-                self.exit_code = 1
+            driver_name = cam_iface.get_driver_name()
+            num_cameras = cam_iface.get_num_cameras()
+
+            cam_info = []
+            try:
+                for idx in range(num_cameras):
+                    vendor, model, chip = cam_iface.get_camera_info(idx)
+                    mode_choice_strings = []
+                    for mode_number in range( cam_iface.get_num_modes(idx) ):
+                        mode_choice_strings.append(
+                            cam_iface.get_mode_string(idx,mode_number))
+
+                    cam_name_string = "num_buffers('%s','%s')"%(vendor,model)
+                    if cam_name_string in rc_params:
+                        num_buffers = rc_params[cam_name_string]
+                    else:
+                        if vendor == 'Basler' and model == 'A602f':
+                            num_buffers = 100
+                        elif vendor == 'Basler' and model == 'A622f':
+                            num_buffers = 50
+                        elif vendor == 'Unibrain' and model == 'Fire-i BCL 1.2':
+                            num_buffers = 100
+                        elif vendor == 'Unibrain' and model == 'Fire-i BBW 1.3':
+                            num_buffers = 100
+                        elif vendor == 'Point Grey Research' and model=='Scorpion':
+                            num_buffers = 32
+                        else:
+                            num_buffers = 32
+                    if sys.platform.startswith('win'):
+                        num_buffers = 10 # for some reason, this seems to be the max, at least with CMU1394
+                    cam_info.append( dict(vendor=vendor,
+                                          model=model,
+                                          chip=chip,
+                                          num_buffers=num_buffers,
+                                          mode_choice_strings=mode_choice_strings,
+                                          ) )
+                # closes for loop
+            except cam_iface.CamIFaceError, x:
+                dlg = wx.MessageDialog(self.frame, str(x),
+                                       'Error getting camera information',
+                                       wx.OK | wx.ICON_ERROR)
+                dlg.ShowModal()
+                dlg.Destroy()
+                return
+
+            dlg = InitCameraDialog(self.frame, -1, "Select camera & parameters",
+                                   size=wx.DefaultSize, pos=wx.DefaultPosition,
+                                   style=wx.DEFAULT_DIALOG_STYLE,
+                                   cam_info=cam_info)
+            res = dlg.ShowModal()
+            cam_no_selected = None
+            if res == wx.ID_OK and len(dlg.radios):
+                for idx in range(len(dlg.radios)):
+                    if dlg.radios[idx].GetValue():
+                        cam_no_selected = idx
+                        num_buffers = int(dlg.num_buffers[idx].GetValue())
+            else:
+                return
+
+            vendor, model, chip = cam_iface.get_camera_info(cam_no_selected)
+
+            cam_name_string = "num_buffers('%s','%s')"%(vendor,model)
+            rc_params[cam_name_string] = num_buffers
+            save_rc_params()
+
+            # allocate 400 MB then delete, just to get some respec' from OS:
+            nx.zeros((400*1024,),nx.uint8)
+
+            mode_choice = cam_info[cam_no_selected]['mode_choice_control']
+            mode_number = mode_choice.GetSelection()
+
+            try:
+                self.cam = cam_iface.Camera(cam_no_selected,
+                                            num_buffers,
+                                            mode_number
+                                            )
+            except cam_iface.CamIFaceError, x:
+                dlg = wx.MessageDialog(self.frame, str(x),
+                                       'Error opening camera',
+                                       wx.OK | wx.ICON_ERROR)
+                dlg.ShowModal()
+                dlg.Destroy()
                 raise
+            vendor, model, chip = cam_iface.get_camera_info(cam_no_selected)
+            self.cam_ids[self.cam] = 'cam %d'%(len(self.cam_ids.keys())+1,)
+            format = self.cam.get_pixel_coding()
+            self.statusbar.SetStatusText('Connected to %s %s (%s)'%(
+                vendor, model, format),0)
 
-        self.pixel_coding = format
+            self.property_callback_funcs = {}
+            self.roi_callback_funcs = []
+            self.framerate_callback_funcs = []
 
-        self.cam_max_width = self.cam.get_max_width()
-        self.cam_max_height = self.cam.get_max_height()
+            # set external trigger modes
+            try:
+                trigger_mode = self.cam.get_trigger_mode_number()
+            except cam_iface.CamIFaceError:
+                print 'Error getting trigger mode number'
+                trigger_mode = None
 
-        # start threads
-        grab_thread = threading.Thread( target=grab_func,
-                                        args=(self,
-                                              self.image_update_lock,
-                                              self.cam,
-                                              self.cam_ids[self.cam],
-                                              self.max_priority_enabled,
-                                              self.quit_now,
-                                              self.thread_done,
-                                              self.cam_fps_value,
-                                              self.framerate,
-                                              self.num_buffers,
-                                              self.plugins,
-                                              self.cam_prop_get_queue,
-                                              self.cam_roi_get_queue,
-                                              self.framerate_get_queue,
-                                              self.cam_cmd_queue,
-                                              ))
-        grab_thread.setDaemon(True)
-        grab_thread.start()
-        self.grab_thread = grab_thread
+            wxctrl = xrc.XRCCTRL( self.cam_framerate_panel, "EXTERNAL_TRIGGER_MODE")
+            for i in range(self.cam.get_num_trigger_modes()):
+                trigger_mode_string = self.cam.get_trigger_mode_string(i)
+                wxctrl.Append(trigger_mode_string)
+            if trigger_mode is not None:
+                wxctrl.SetSelection(trigger_mode)
+            else:
+                wxctrl.SetSelection(0)
+            self.register_framerate_query_callback( self.OnReceiveFramerate )
 
-        save_thread = threading.Thread( target=save_func,
-                                        args=(self,
-                                              self.save_info_lock,
-                                              self.quit_now,
-                                              ))
-        save_thread.setDaemon(True)
-        save_thread.start()
+            cphs = []
+            n_props = self.cam.get_num_camera_properties()
+
+            # info from grab thread to GUI thread
+            self.cam_prop_get_queue = Queue.Queue()
+            self.cam_roi_get_queue = Queue.Queue()
+            self.framerate_get_queue = Queue.Queue()
+
+            # commands from GUI thread to grab thread
+            self.cam_cmd_queue = Queue.Queue()
+
+            self._mainthread_roi = None
+            self.register_roi_query_callback( self.OnReceiveROI)
+            self.cam_cmd_queue.put( ('ROI query',None) )
+            self.cam_cmd_queue.put( ('framerate query',None) )
+
+            auto_cam_settings_panel = xrc.XRCCTRL(
+                self.cam_settings_panel, "AUTO_CAM_SETTINGS_PANEL")
+            acsp_sizer = wx.FlexGridSizer(n_props) # guesstimate
+            n_rows = 0
+            n_cols = 4
+            for prop_num in range(n_props):
+                auto_cam_settings_panel.Hide()
+                cph = CameraParameterHelper( self.cam,
+                                             auto_cam_settings_panel,
+                                             acsp_sizer,
+                                             prop_num,
+                                             self)
+                auto_cam_settings_panel.Show()
+                if cph.present:
+                    n_rows += 1
+                    cphs.append( cph )
+
+            if not len(cphs):
+                acsp_sizer.AddGrowableCol(0)
+                statictext = wx.StaticText(
+                    auto_cam_settings_panel,
+                    label='(No properties present on this camera)')
+                n_rows += 1
+                acsp_sizer.Add(statictext,1,flag=wx.ALIGN_CENTRE|wx.EXPAND)
+            else:
+                acsp_sizer.AddGrowableCol(1)
+
+            acsp_sizer.SetRows(n_rows)
+            acsp_sizer.SetCols(n_cols)
+            auto_cam_settings_panel.SetSizer(acsp_sizer)
+            auto_cam_settings_panel.Layout()
+
+            for cph in cphs:
+                non_self_cphs = [cph2 for cph2 in cphs if cph2 is not cph]
+                for cph2 in non_self_cphs:
+                    cph.AddToUpdate( cph2 )
+
+            self.cam_param_helpers = cphs
+            wxctrl = xrc.XRCCTRL( self.cam_settings_panel, "QUERY_CAMERA_SETTINGS")
+            wx.EVT_BUTTON(wxctrl, wxctrl.GetId(),
+                          self.OnQueryCameraSettings)
+
+            # query camera settings to initially fill window
+            #self.OnQueryCameraSettings(None)
+
+            # re-fit the camera control window
+            self.cam_control_panel.Fit()
+            self.cam_control_frame.Fit()
+
+
+            # send plugins information that camera is starting
+            format = self.cam.get_pixel_coding()
+            for plugin in self.plugins:
+                try:
+                    plugin.camera_starting_notification(
+                        self.cam_ids[self.cam],
+                        pixel_format=format,
+                        max_width=self.cam.get_max_width(),
+                        max_height=self.cam.get_max_height())
+
+                except Exception, err:
+                    dlg = wx.MessageDialog(
+                        self.frame,
+                        'An FView plugin (%s) failed: %s'%(repr(plugin),str(err)),
+                        'A plugin error has forced the shutdown of FView',
+                        wx.OK | wx.ICON_ERROR
+                        )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+
+                    event = wx.CommandEvent(FViewShutdownEvent)
+                    event.SetEventObject(self)
+                    wx.PostEvent(self, event)
+                    self.exit_code = 1
+                    raise
+
+            self.pixel_coding = format
+
+            self.cam_max_width = self.cam.get_max_width()
+            self.cam_max_height = self.cam.get_max_height()
+
+            # start threads
+            grab_thread = threading.Thread( target=grab_func,
+                                            args=(self,
+                                                  self.image_update_lock,
+                                                  self.cam,
+                                                  self.cam_ids[self.cam],
+                                                  self.max_priority_enabled,
+                                                  self.quit_now,
+                                                  self.thread_done,
+                                                  self.cam_fps_value,
+                                                  self.framerate,
+                                                  self.num_buffers,
+                                                  self.plugins,
+                                                  self.cam_prop_get_queue,
+                                                  self.cam_roi_get_queue,
+                                                  self.framerate_get_queue,
+                                                  self.cam_cmd_queue,
+                                                  ))
+            grab_thread.setDaemon(True)
+            grab_thread.start()
+            self.grab_thread = grab_thread
+
+            save_thread = threading.Thread( target=save_func,
+                                            args=(self,
+                                                  self.save_info_lock,
+                                                  self.quit_now,
+                                                  ))
+            save_thread.setDaemon(True)
+            save_thread.start()
+        except Exception,err:
+            dlg = wx.MessageDialog(
+                self.frame, ('An unknown error accessing the camera was '
+                             'encountered. The log file will have details. '
+                             'FView will now exit.\n\nThe error was:\n%s'%
+                             (str(err),)),
+                'FView error',
+                wx.OK | wx.ICON_ERROR
+                )
+            dlg.ShowModal()
+            dlg.Destroy()
+            traceback.print_exc(err,sys.stderr)
+            self.exit_code = 1
+            self.OnQuit()
 
     def register_property_query_callback( self, prop_num, callback_func):
         self.property_callback_funcs.setdefault(prop_num,[]).append(
