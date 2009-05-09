@@ -702,6 +702,7 @@ class BackendChoiceDialog(wx.Dialog):
         wx.EVT_BUTTON(wxctrl, wxctrl.GetId(),
                       self.OnCancel)
         self.new_backend_and_wrapper = None
+        self.shutdown_error_info = None
 
     def OnOK(self,event):
         wxctrl = xrc.XRCCTRL(self,'BACKEND_CHOICE')
@@ -1251,19 +1252,15 @@ class App(wx.App):
                         max_height=self.cam.get_max_height())
 
                 except Exception, err:
-                    dlg = wx.MessageDialog(
-                        self.frame,
+                    self.shutdown_error_info = (
                         'An FView plugin (%s) failed: %s'%(repr(plugin),str(err)),
                         'A plugin error has forced the shutdown of FView',
-                        wx.OK | wx.ICON_ERROR
                         )
-                    dlg.ShowModal()
-                    dlg.Destroy()
 
+                    self.exit_code = 1
                     event = wx.CommandEvent(FViewShutdownEvent)
                     event.SetEventObject(self)
                     wx.PostEvent(self, event)
-                    self.exit_code = 1
                     raise
 
             self.pixel_coding = format
@@ -1665,64 +1662,77 @@ class App(wx.App):
 
     def OnUpdateCameraView(self, evt):
 #AR        self.app_ready.set() # tell grab thread to start
+        try:
 
-        self.update_view_num += 1
-        if (self.update_view_num % self.view_interval) != 0:
-            return
-
-        if USE_DEBUG:
-            sys.stdout.write('R')
-            sys.stdout.flush()
-
-        if self.save_images:
-            if not self.update_display_while_saving:
+            self.update_view_num += 1
+            if (self.update_view_num % self.view_interval) != 0:
                 return
 
-        # copy stuff ASAP
-        self.image_update_lock.acquire()
-        if self.new_image:
-            new_image = True
-            last_image = self.last_image
-            last_fullsize = self.last_image_fullsize
-            last_offset = self.last_offset
-            self.new_image = False
-            points = self.plugin_points
-            linesegs = self.plugin_linesegs
-        else:
-            new_image = False
-        # release lock ASAP
-        self.image_update_lock.release()
+            if USE_DEBUG:
+                sys.stdout.write('R')
+                sys.stdout.flush()
 
-        # now draw
-        if new_image:
-            last_image = nx.asarray(last_image) # convert to numpy view
+            if self.save_images:
+                if not self.update_display_while_saving:
+                    return
 
-            fullw,fullh = last_fullsize
-            if last_image.shape != (fullh,fullw):
-                xoffset=last_offset[0]
-                yoffset=last_offset[1]
-                h,w=last_image.shape
-                linesegs.extend(
-                    [(xoffset,    yoffset,
-                      xoffset,    yoffset+h),
-                     (xoffset,    yoffset+h,
-                      xoffset+w,  yoffset+h),
-                     (xoffset+w,  yoffset+h,
-                      xoffset+w,  yoffset),
-                     (xoffset+w,  yoffset,
-                      xoffset,    yoffset),
-                     ] )
+            # copy stuff ASAP
+            self.image_update_lock.acquire()
+            if self.new_image:
+                new_image = True
+                last_image = self.last_image
+                last_fullsize = self.last_image_fullsize
+                last_offset = self.last_offset
+                self.new_image = False
+                points = self.plugin_points
+                linesegs = self.plugin_linesegs
+            else:
+                new_image = False
+            # release lock ASAP
+            self.image_update_lock.release()
 
-            self.cam_image_canvas.update_image_and_drawings(
-                'camera',
-                last_image,
-                format=self.pixel_coding,
-                points=points,
-                linesegs=linesegs,
-                xoffset=last_offset[0],
-                yoffset=last_offset[1],
-                )
-            self.cam_image_canvas.Refresh(eraseBackground=False)
+            # now draw
+            if new_image:
+                last_image = nx.asarray(last_image) # convert to numpy view
+
+                fullw,fullh = last_fullsize
+                if last_image.shape != (fullh,fullw):
+                    xoffset=last_offset[0]
+                    yoffset=last_offset[1]
+                    h,w=last_image.shape
+                    linesegs.extend(
+                        [(xoffset,    yoffset,
+                          xoffset,    yoffset+h),
+                         (xoffset,    yoffset+h,
+                          xoffset+w,  yoffset+h),
+                         (xoffset+w,  yoffset+h,
+                          xoffset+w,  yoffset),
+                         (xoffset+w,  yoffset,
+                          xoffset,    yoffset),
+                         ] )
+
+                self.cam_image_canvas.update_image_and_drawings(
+                    'camera',
+                    last_image,
+                    format=self.pixel_coding,
+                    points=points,
+                    linesegs=linesegs,
+                    xoffset=last_offset[0],
+                    yoffset=last_offset[1],
+                    )
+                self.cam_image_canvas.Refresh(eraseBackground=False)
+        except Exception,err:
+            self.shutdown_error_info=(
+                ('An unknown error updating the screen was '
+                 'encountered. The log file will have details. '
+                 'FView will now exit.\n\nThe error '
+                 'was:\n%s'%(str(err),)),
+                'FView error',)
+            self.exit_code = 1
+            event = wx.CommandEvent(FViewShutdownEvent)
+            event.SetEventObject(self)
+            wx.PostEvent(self, event)
+            raise
 
     def OnWindowClose(self, event):
         self.timer2.Stop()
@@ -1733,6 +1743,16 @@ class App(wx.App):
         event.Skip() # propagate event up the chain...
 
     def OnQuit(self, dummy_event=None):
+        self.quit_now.set()
+
+        # normal or error exit
+        if self.shutdown_error_info is not None:
+            msg,title = self.shutdown_error_info
+            dlg = wx.MessageDialog(self.frame,msg,title,
+                                   wx.OK | wx.ICON_ERROR
+                                   )
+            dlg.ShowModal()
+            dlg.Destroy()
         self.frame.Close() # results in call to OnWindowClose()
         if self.exit_code != 0:
             sys.exit(self.exit_code)
