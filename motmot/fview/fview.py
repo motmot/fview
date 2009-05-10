@@ -824,17 +824,38 @@ class App(wx.App):
         # plugins menu
         self._load_plugins()
 
+        del_plugins = []
         if len(self.plugins):
             windowsmenu.AppendItem(wx.MenuItem(parentMenu=windowsmenu,
                                                kind=wx.ITEM_SEPARATOR))
             for plugin in self.plugins:
                 plugin_name = plugin.get_plugin_name()
+
+                if hasattr(plugin,'set_all_fview_plugins'):
+                    try:
+                        plugin.set_all_fview_plugins(self.plugins)
+                    except Exception,err:
+                        formatted_error = traceback.format_exc(err)
+                        traceback.print_exc(err,sys.stderr)
+                        msg = 'While attempting to open the plugin "%s",\n' \
+                              'FView encountered an error. The error is:\n\n' \
+                              '%s\n\n' \
+                              'More details:\n' \
+                              '%s'%( plugin_name, err, formatted_error )
+                        dlg = wx.MessageDialog(self.frame, msg,
+                                               'FView plugin error',
+                                               wx.OK | wx.ICON_WARNING)
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                        del_plugins.append(plugin)
+                        continue
+
                 ID_tmp = wx.NewId()
                 windowsmenu.Append(ID_tmp, plugin_name+'...')
                 wx.EVT_MENU(self, ID_tmp, self.plugin_dict[plugin].OnShowFrame)
 
-                if hasattr(plugin,'set_all_fview_plugins'):
-                    plugin.set_all_fview_plugins(self.plugins)
+        for del_plugin in del_plugins:
+            del self.plugins[self.plugins.index(del_plugin)]
 
         helpmenu = wx.Menu()
         ID_helpmenu = wx.NewId()
@@ -1030,9 +1051,20 @@ class App(wx.App):
         return True
 
     def _load_plugins(self):
-        plugins, plugin_dict = plugin_manager.load_plugins(self.frame)
+        plugins, plugin_dict, bad_plugins = \
+                 plugin_manager.load_plugins(self.frame)
         self.plugins = plugins
         self.plugin_dict = plugin_dict
+        if len(bad_plugins):
+            for name, (err,full_err) in bad_plugins.iteritems():
+                msg = 'While attempting to open the plugin "%s",\n' \
+                      'FView encountered an error. The error is:\n\n' \
+                      '%s\n\n'%( name, err )
+                dlg = wx.MessageDialog(self.frame, msg,
+                                       'FView plugin error',
+                                       wx.OK | wx.ICON_WARNING)
+                dlg.ShowModal()
+                dlg.Destroy()
 
     def OnAboutFView(self, event):
         _need_cam_iface()

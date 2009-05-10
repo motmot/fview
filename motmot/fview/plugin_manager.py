@@ -1,10 +1,10 @@
 import pkg_resources
 import wx
-import os
+import sys, os
 import warnings, traceback
 
 def load_plugins(wxframe):
-    PluginClasses = []
+    PluginClassesAndNames = []
     loaded_components = []
     pkg_env = pkg_resources.Environment()
     for name in pkg_env:
@@ -37,11 +37,21 @@ def load_plugins(wxframe):
                         dlg.ShowModal()
                         dlg.Destroy()
                         continue
-                PluginClasses.append( PluginClass )
+                PluginClassesAndNames.append( (PluginClass,name) )
                 modules.append(entry_point.module_name)
                 loaded_components.append(entry_point.module_name)
     # make instances of plugins
-    plugins = [PluginClass(wxframe) for PluginClass in PluginClasses]
+    plugins = []
+    bad_plugins = {}
+    for PluginClass,name in PluginClassesAndNames:
+        try:
+            instance = PluginClass(wxframe)
+        except Exception,err:
+            formatted_error = traceback.format_exc(err)
+            bad_plugins[name] = (str(err), formatted_error)
+            traceback.print_exc(err,sys.stderr)
+        else:
+            plugins.append( instance )
     plugin_dict = {}
     for plugin in plugins:
         class PluginHelper:
@@ -55,4 +65,5 @@ def load_plugins(wxframe):
             def OnShowFrame(self,event):
                 self.frame.Show(True)
         plugin_dict[plugin] = PluginHelper(plugin)
-    return plugins, plugin_dict
+    return plugins, plugin_dict, bad_plugins
+
