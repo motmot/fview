@@ -59,6 +59,8 @@ def load_plugins(wxframe):
                 self.plugin = plugin
                 self.frame = plugin.get_frame()
                 wx.EVT_CLOSE(self.frame, self.OnWindowClose)
+            def Destroy(self):
+                self.frame.Destroy()
             def OnWindowClose(self,event):
                 # don't really close the window, just hide it
                 self.frame.Show(False)

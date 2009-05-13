@@ -851,7 +851,9 @@ class App(wx.App):
                         continue
 
                 ID_tmp = wx.NewId()
-                windowsmenu.Append(ID_tmp, plugin_name+'...')
+                item_tmp = wx.MenuItem(windowsmenu, ID_tmp, plugin_name+'...')
+                windowsmenu.AppendItem(item_tmp)
+                self.plugin_dict[plugin].fview_menu_wx_item = item_tmp
                 wx.EVT_MENU(self, ID_tmp, self.plugin_dict[plugin].OnShowFrame)
 
         for del_plugin in del_plugins:
@@ -1275,6 +1277,7 @@ class App(wx.App):
 
             # send plugins information that camera is starting
             format = self.cam.get_pixel_coding()
+            bad_plugins = []
             for plugin in self.plugins:
                 try:
                     plugin.camera_starting_notification(
@@ -1284,16 +1287,23 @@ class App(wx.App):
                         max_height=self.cam.get_max_height())
 
                 except Exception, err:
-                    self.shutdown_error_info = (
-                        'An FView plugin (%s) failed: %s'%(repr(plugin),str(err)),
-                        'A plugin error has forced the shutdown of FView',
-                        )
+                    traceback.print_exc(err,sys.stderr)
+                    msg = 'An FView plugin "%s" failed: %s\n\n'\
+                          'The plugin will now be disabled, and '\
+                          'the log file will have more details.'%(
+                        plugin.plugin_name,
+                        str(err))
+                    dlg = wx.MessageDialog(self.frame,msg,
+                                           'FView plugin error',
+                                           wx.OK | wx.ICON_WARNING)
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    bad_plugins.append( plugin )
 
-                    self.exit_code = 1
-                    event = wx.CommandEvent(FViewShutdownEvent)
-                    event.SetEventObject(self)
-                    wx.PostEvent(self, event)
-                    raise
+            for bad_plugin in bad_plugins:
+                self.plugin_dict[bad_plugin].fview_menu_wx_item.Enable(False)
+                self.plugin_dict[bad_plugin].Destroy()
+                del self.plugins[ self.plugins.index(bad_plugin) ]
 
             self.pixel_coding = format
 
