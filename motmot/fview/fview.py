@@ -1677,7 +1677,8 @@ class App(wx.App):
                 self.grab_thread = None # only show this once
                 dlg = wx.MessageDialog(
                     self.frame,
-                    'the camera thread appears to have died unexpectedly',
+                    'the camera thread appears to have died unexpectedly. '
+                    'The log file will have more details.',
                     'FView Error',
                     wx.OK | wx.ICON_ERROR)
                 try:
