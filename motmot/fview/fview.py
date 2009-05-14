@@ -189,6 +189,12 @@ def grab_func(wxapp,
 
     cam.start_camera()
 
+    if 1:
+        # This reduces likelihood of frame corruption on libdc1394
+        # 2.1.0 with Firefly MV USB cameras. Tested on Ubuntu 8.04
+        # amd64 with libusb-1.0.1.
+        time.sleep(0.1)
+
     # semi-hack to maximize hardware ROI on start
     try: cam.set_frame_roi(0,0,max_width,max_height)
     except cam_iface.CamIFaceError, err:
