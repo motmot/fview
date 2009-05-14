@@ -153,7 +153,9 @@ def grab_func(wxapp,
               cam_prop_get_queue,
               cam_roi_get_queue,
               framerate_get_queue,
-              cam_cmd_queue):
+              cam_cmd_queue,
+              fview_ext_trig_plugin,
+              ):
     # transfer data from camera
     global in_fnt
 
@@ -270,7 +272,12 @@ def grab_func(wxapp,
 
             if in_fnt.qsize() < 1000:
                 # save a copy of the buffer
-                in_fnt.put( (cam_iface_buf, xyoffset, timestamp, fno) )
+                if fview_ext_trig_plugin is not None:
+                    # from CamTrig device
+                    save_timestamp = fview_ext_trig_plugin.get_last_trigger_timestamp(cam_id)
+                else:
+                    save_timestamp = timestamp # from camera driver
+                in_fnt.put( (cam_iface_buf, xyoffset, save_timestamp, fno) )
             else:
                 showerr('ERROR: not appending new frame to queue, because '
                         'it already has 1000 frames!')
@@ -734,6 +741,8 @@ class App(wx.App):
 
         wx.InitAllImageHandlers()
         self.frame = wx.Frame(None, -1, "FView",size=(640,480))
+
+        self.fview_ext_trig_plugin = None
 
         self.xrcid2validator = {}
 
@@ -1305,6 +1314,10 @@ class App(wx.App):
                 self.plugin_dict[bad_plugin].Destroy()
                 del self.plugins[ self.plugins.index(bad_plugin) ]
 
+            for plugin in self.plugins:
+                if plugin.get_plugin_name() == 'FView external trigger':
+                    self.fview_ext_trig_plugin = plugin
+
             self.pixel_coding = format
 
             self.cam_max_width = self.cam.get_max_width()
@@ -1327,6 +1340,7 @@ class App(wx.App):
                                                   self.cam_roi_get_queue,
                                                   self.framerate_get_queue,
                                                   self.cam_cmd_queue,
+                                                  self.fview_ext_trig_plugin,
                                                   ))
             grab_thread.setDaemon(True)
             grab_thread.start()
