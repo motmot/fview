@@ -19,6 +19,8 @@ def load_plugins(wxframe):
                     PluginClass = entry_point.load()
                 except Exception,x:
                     if int(os.environ.get('FVIEW_RAISE_ERRORS','0')):
+                        print >> sys.stderr,'ERROR while loading %s'%(
+                            entry_point.module_name,)
                         raise
                     else:
                         formatted_error = traceback.format_exc(x)
