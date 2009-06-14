@@ -51,7 +51,19 @@ class ReplayApp(wx.App):
         (self.options, args) = parser.parse_args()
 
         self.frame = RES.LoadFrame(None,"FVIEW_FMF_REPLAY_FRAME") # make frame main panel
-        self.plugins, plugin_dict = plugin_manager.load_plugins(self.frame)
+        self.plugins, plugin_dict, bad_plugins = \
+                      plugin_manager.load_plugins(self.frame)
+
+        if len(bad_plugins):
+            for name, (err,full_err) in bad_plugins.iteritems():
+                msg = 'While attempting to open the plugin "%s",\n' \
+                      'FView encountered an error. The error is:\n\n' \
+                      '%s\n\n'%( name, err )
+                dlg = wx.MessageDialog(self.frame, msg,
+                                       'FView plugin error',
+                                       wx.OK | wx.ICON_WARNING)
+                dlg.ShowModal()
+                dlg.Destroy()
 
         if self.options.show_plugins:
             print 'plugin description'
