@@ -15,7 +15,8 @@ mechanism. In outline, the steps required are:
 * Implement your realtime processing logic in your class's
   ``process_frame()`` method. Note that this code will be run in a
   separate thread of execution from the GUI, so be careful to avoid
-  share memory structures without locking.
+  share memory structures without locking. The `buf` argument is a
+  numpy array (or else supports the numpy array interface).
 * Optionally, handle the various options allowed by FView.
 * Finally, register your FView plugin.
 
@@ -35,8 +36,8 @@ key to ``entry_points``. For the above example, this would be::
 
 .. _traits: http://code.enthought.com/projects/traits/
 
-Tutorial
---------
+Tutorials
+---------
 
 .. toctree::
 
