@@ -61,7 +61,6 @@ class ReplayApp(wx.App):
             self.options.plugins = [self.options.plugin]
         del self.options.plugin
 
-        print self.options.plugins
         self.frame = RES.LoadFrame(None,"FVIEW_FMF_REPLAY_FRAME") # make frame main panel
         self.plugins, plugin_dict, bad_plugins = \
                       plugin_manager.load_plugins(self.frame)
@@ -121,14 +120,17 @@ class ReplayApp(wx.App):
             if hasattr(plugin,'set_all_fview_plugins'):
                 plugin.set_all_fview_plugins(self.plugins)
 
+        self.trackers = []
+
         for plugin in self.options.plugins:
-            self.tracker = self.plugins[plugin]
-            self.tracker.get_frame().Show()
+            tracker = self.plugins[plugin]
+            self.trackers.append( tracker )
+            tracker.get_frame().Show()
 
         self.play_thread = None
 
-
-        wx.EVT_CLOSE(self.tracker.get_frame(),self.OnTrackerWindowClose)
+        for tracker in self.trackers:
+            wx.EVT_CLOSE(tracker.get_frame(),self.OnTrackerWindowClose)
 
         ID_Timer = wx.NewId()
         self.timer = wx.Timer(self, ID_Timer)
@@ -181,7 +183,8 @@ class ReplayApp(wx.App):
         if (tup is None and
             self.options.pump and
             last_frame_info is not None):
-            points,linesegs = self.tracker.process_frame(*last_frame_info)
+            for tracker in self.trackers:
+                points,linesegs = tracker.process_frame(*last_frame_info)
             im = last_frame_info[1]
             tup = im, points, linesegs
 
@@ -221,16 +224,19 @@ class ReplayApp(wx.App):
         bg_image,timestamp0 = fmf.get_frame(0)
 
         self.buf_allocator = None
-        if hasattr(self.tracker,'get_buffer_allocator'):
-            self.buf_allocator = self.tracker.get_buffer_allocator(cam_id)
+        for tracker in self.trackers:
+            if hasattr(tracker,'get_buffer_allocator'):
+                self.buf_allocator = tracker.get_buffer_allocator(cam_id)
+                break
 
-        self.tracker.camera_starting_notification(cam_id,
-                                                  pixel_format=format,
-                                                  max_width=bg_image.shape[1],
-                                                  max_height=bg_image.shape[0])
+        for tracker in self.trackers:
+            tracker.camera_starting_notification(cam_id,
+                                                 pixel_format=format,
+                                                 max_width=bg_image.shape[1],
+                                                 max_height=bg_image.shape[0])
 
-        if hasattr(self.tracker,'offline_startup_func'):
-            self.tracker.offline_startup_func(self.options.plugin_arg)
+            if hasattr(tracker,'offline_startup_func'):
+                tracker.offline_startup_func(self.options.plugin_arg)
 
         # save data for processing
         self.loaded_fmf = dict( fmf=fmf,
@@ -238,7 +244,7 @@ class ReplayApp(wx.App):
                                 bg_image=bg_image,
                                 cam_id=cam_id,
                                 format=format,
-                                tracker=self.tracker,
+                                trackers=self.trackers,
                                 )
         # new queue for each camera prevents potential confusion
         self.inq = Queue.Queue()
@@ -284,7 +290,7 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
         n_frames = loaded_fmf['n_frames']
         fmf = loaded_fmf['fmf']
         bg_image = loaded_fmf['bg_image']
-        tracker = loaded_fmf['tracker']
+        trackers = loaded_fmf['trackers']
         cam_id = loaded_fmf['cam_id']
         format = loaded_fmf['format']
 
@@ -294,7 +300,7 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
             fullsize_image,timestamp = fmf.get_frame(fno)
             loaded_fmf['bg_image'] = fullsize_image
 
-            # process with tracker #################
+            # process with trackers #################
             buf_offset=0,0
             framenumber=fno
             if buf_allocator is None:
@@ -315,7 +321,12 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
                                timestamp,
                                framenumber)
 
-            points,linesegs = tracker.process_frame(*last_frame_info)
+            points = []
+            linesegs = []
+            for tracker in trackers:
+                pointsi,linesegsi = tracker.process_frame(*last_frame_info)
+                points.extend(pointsi)
+                linesegs.extend(linesegsi)
             tup = fullsize_image, points, linesegs
             im_pts_segs_q.put( tup )
             #time.sleep(1e-2)
@@ -328,7 +339,8 @@ def main():
     app.MainLoop()
 
     if app.loaded_fmf is not None:
-        app.tracker.quit()
+        for tracker in app.trackers:
+            tracker.quit()
 
 if __name__=='__main__':
     main()
