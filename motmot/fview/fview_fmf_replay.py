@@ -25,8 +25,12 @@ class ReplayApp(wx.App):
         parser = OptionParser(usage)
 
         parser.add_option("--plugin", type='int',
-                          help="choose plugin (use --show-plugins first)",
-                          default=0)
+                          help="choose plugins (use --show-plugins first)",
+                          default=None)
+
+        parser.add_option("--plugins", type='string',
+                          help="choose multiple plugins (e.g. 2,3)",
+                          default=None)
 
         parser.add_option("--play-n-times-and-quit", type='int',
                           help="replay movie N times, then quit")
@@ -50,6 +54,14 @@ class ReplayApp(wx.App):
 
         (self.options, args) = parser.parse_args()
 
+        if self.options.plugins is not None:
+            assert self.options.plugin is None, "cannot give both --plugin and --plugins arguments"
+            self.options.plugins = map(int,self.options.plugins.split(','))
+        else:
+            self.options.plugins = [self.options.plugin]
+        del self.options.plugin
+
+        print self.options.plugins
         self.frame = RES.LoadFrame(None,"FVIEW_FMF_REPLAY_FRAME") # make frame main panel
         self.plugins, plugin_dict, bad_plugins = \
                       plugin_manager.load_plugins(self.frame)
@@ -108,8 +120,10 @@ class ReplayApp(wx.App):
         for plugin in self.plugins:
             if hasattr(plugin,'set_all_fview_plugins'):
                 plugin.set_all_fview_plugins(self.plugins)
-        self.tracker = self.plugins[self.options.plugin]
-        self.tracker.get_frame().Show()
+
+        for plugin in self.options.plugins:
+            self.tracker = self.plugins[plugin]
+            self.tracker.get_frame().Show()
 
         self.play_thread = None
 
