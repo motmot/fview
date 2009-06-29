@@ -20,10 +20,18 @@ last_frame_info = None
 class ReplayApp(wx.App,traits.HasTraits):
     load_fmf_file = traits.Event
     play_frames = traits.Event
+    play_and_save_frames = traits.Event
+    next_play_is_saved = traits.Bool(False)
+    save_output = traits.Bool(False)
+    save_output_fmf = traits.Any
+    play_thread = traits.Any
+    show_every_frame = traits.Bool(False)
 
     traits_view = View( Group( Item('load_fmf_file',
                                     editor=ButtonEditor(),show_label=False),
                                Item('play_frames',
+                                    editor=ButtonEditor(),show_label=False),
+                               Item('play_and_save_frames',
                                     editor=ButtonEditor(),show_label=False),
                                ))
 
@@ -141,8 +149,6 @@ class ReplayApp(wx.App,traits.HasTraits):
             self.trackers.append( tracker )
             tracker.get_frame().Show()
 
-        self.play_thread = None
-
         for tracker in self.trackers:
             wx.EVT_CLOSE(tracker.get_frame(),self.OnTrackerWindowClose)
 
@@ -188,8 +194,13 @@ class ReplayApp(wx.App,traits.HasTraits):
         tup = None
 
         try:
-            while 1:
+            tup = self.inq.get(0)
+            while not self.show_every_frame:
                 tup = self.inq.get(0)
+            if self.save_output_fmf is not None:
+                self.statusbar.SetStatusText(
+                    'saving %s'%self.save_output_fmf.filename,1)
+            else:
                 self.statusbar.SetStatusText('playing',1)
         except Queue.Empty:
             pass
@@ -200,11 +211,12 @@ class ReplayApp(wx.App,traits.HasTraits):
             for tracker in self.trackers:
                 points,linesegs = tracker.process_frame(*last_frame_info)
             im = last_frame_info[1]
-            tup = im, points, linesegs
+            timestamp = last_frame_info[3]
+            tup = im, points, linesegs, timestamp
 
         if not self.options.quick:
             if tup is not None:
-                im, points, linesegs = tup
+                im, points, linesegs, timestamp = tup
                 # display on screen
                 self.cam_image_canvas.update_image_and_drawings('camera',
                                                                 im,
@@ -212,6 +224,17 @@ class ReplayApp(wx.App,traits.HasTraits):
                                                                 points=points,
                                                                 linesegs=linesegs,
                                                                 )
+                if self.save_output:
+                    out_frame = self.cam_image_canvas.get_canvas_copy()
+                    self.save_output_fmf.add_frame( out_frame, timestamp )
+
+        if not self.playing.is_set():
+            # stop vestiges of saving after done playing
+            self.save_output = False
+            self.show_every_frame = False
+            if self.save_output_fmf is not None:
+                self.save_output_fmf.close()
+                self.save_output_fmf = None
 
     def _load_fmf_file_fired(self,event):
         doit=False
@@ -284,18 +307,41 @@ class ReplayApp(wx.App,traits.HasTraits):
 
 
     def OnTrackerWindowClose(self,event):
+        if self.save_output_fmf is not None:
+            self.save_output_fmf.close()
+            self.save_output_fmf = None
         pass # don't close window (pointless in trax_replay)
 
     def _play_frames_fired(self,event):
         if self.loaded_fmf is None:
             print 'no .fmf file loaded'
             return
+        if self.play_thread is not None:
+            if self.play_thread.isAlive():
+                raise RuntimeError('will not play frames when still playing frames')
+        if self.next_play_is_saved:
+            orig_fname = self.loaded_fmf['fmf'].filename
+            save_base,save_ext = os.path.splitext(orig_fname)
+            if save_ext=='.fmf':
+                save_fname = save_base + '.replay.fmf'
+            else:
+                save_fname = orig_fname + '.replay.fmf'
+            self.save_output_fmf = FlyMovieFormat.FlyMovieSaver(save_fname,
+                                                                version=3,
+                                                                format='RGB8')
+            self.save_output = True
+            self.show_every_frame = True # need to show every frame when saving
+            self.next_play_is_saved = False
         self.play_thread = threading.Thread( target=play_func, args=(self.loaded_fmf,
                                                                      self.inq,
                                                                      self.playing,
                                                                      self.buf_allocator) )
         self.play_thread.setDaemon(True)#don't let this thread keep app alive
         self.play_thread.start()
+
+    def _play_and_save_frames_fired(self,event):
+        self.next_play_is_saved = True
+        self.play_frames = True # fire event
 
 def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
     global last_frame_info
@@ -341,7 +387,7 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
                 pointsi,linesegsi = tracker.process_frame(*last_frame_info)
                 points.extend(pointsi)
                 linesegs.extend(linesegsi)
-            tup = fullsize_image, points, linesegs
+            tup = fullsize_image, points, linesegs, timestamp
             im_pts_segs_q.put( tup )
             #time.sleep(1e-2)
     finally:
