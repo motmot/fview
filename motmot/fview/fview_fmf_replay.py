@@ -2,8 +2,11 @@ import pkg_resources
 import motmot.FlyMovieFormat.FlyMovieFormat as FlyMovieFormat
 import numpy
 import wx
-import motmot.wxglvideo.simple_overlay as simple_overlay
 import time, Queue, threading, os
+if int(os.environ.get('FVIEW_NO_OPENGL','0')):
+    import motmot.wxvideo.wxvideo as simple_overlay
+else:
+    import motmot.wxglvideo.simple_overlay as simple_overlay
 import sys
 import motmot.fview.plugin_manager as plugin_manager # fview's own plugin_manager
 from optparse import OptionParser
