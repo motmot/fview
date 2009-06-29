@@ -2,22 +2,27 @@ import pkg_resources
 import motmot.FlyMovieFormat.FlyMovieFormat as FlyMovieFormat
 import numpy
 import wx
-import wx.xrc as xrc
 import motmot.wxglvideo.simple_overlay as simple_overlay
 import time, Queue, threading, os
 import sys
 import motmot.fview.plugin_manager as plugin_manager # fview's own plugin_manager
 from optparse import OptionParser
-
-RESFILE = pkg_resources.resource_filename(__name__,"fview_fmf_replay.xrc") # trigger extraction
-RESDIR = os.path.split(RESFILE)[0]
-RES = xrc.EmptyXmlResource()
-RES.LoadFromString(open(RESFILE).read())
+import enthought.traits.api as traits
+from enthought.traits.ui.api import View, Item, Group, Handler, HGroup, \
+     VGroup, RangeEditor, InstanceEditor, ButtonEditor
 
 global last_frame_info
 last_frame_info = None
 
-class ReplayApp(wx.App):
+class ReplayApp(wx.App,traits.HasTraits):
+    load_fmf_file = traits.Event
+    play_frames = traits.Event
+
+    traits_view = View( Group( Item('load_fmf_file',
+                                    editor=ButtonEditor(),show_label=False),
+                               Item('play_frames',
+                                    editor=ButtonEditor(),show_label=False),
+                               ))
 
     def OnInit(self,*args,**kw):
         usage = '%prog [options] fmf_filename'
@@ -64,7 +69,7 @@ class ReplayApp(wx.App):
                 self.options.plugins = [0] # default to first plugin
         del self.options.plugin
 
-        self.frame = RES.LoadFrame(None,"FVIEW_FMF_REPLAY_FRAME") # make frame main panel
+        self.frame = wx.Frame(None)
         self.plugins, plugin_dict, bad_plugins = \
                       plugin_manager.load_plugins(self.frame)
 
@@ -89,18 +94,21 @@ class ReplayApp(wx.App):
         wx.InitAllImageHandlers()
 
         self.frame.Show()
-
-        widget = xrc.XRCCTRL(self.frame,"LOAD_FMF_BUTTON")
-        wx.EVT_BUTTON(widget, widget.GetId(), self.OnLoadFmf)
-
-        widget = xrc.XRCCTRL(self.frame,"PLAY_FRAMES")
-        wx.EVT_BUTTON(widget, widget.GetId(), self.OnPlayFrames)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        control = self.edit_traits( parent=self.frame,
+                                    kind='subpanel',
+                                    ).control
+        sizer.Add(control, 0, wx.EXPAND)
+        self.frame.SetSizer(sizer)
+        self.frame.SetAutoLayout(True)
 
         self.loaded_fmf = None
 
         ####
 
-        main_display_panel = xrc.XRCCTRL(self.frame,"MAIN_DISPLAY_PANEL")
+        main_display_panel = wx.Panel(self.frame)
+        sizer.Add(main_display_panel, 1, wx.EXPAND)
+
         box = wx.BoxSizer(wx.VERTICAL)
         main_display_panel.SetSizer(box)
 
@@ -202,7 +210,7 @@ class ReplayApp(wx.App):
                                                                 linesegs=linesegs,
                                                                 )
 
-    def OnLoadFmf(self,event):
+    def _load_fmf_file_fired(self,event):
         doit=False
         dlg = wx.FileDialog( self.frame, "Select .fmf file",
                             style = wx.OPEN,
@@ -275,7 +283,7 @@ class ReplayApp(wx.App):
     def OnTrackerWindowClose(self,event):
         pass # don't close window (pointless in trax_replay)
 
-    def OnPlayFrames(self,event):
+    def _play_frames_fired(self,event):
         if self.loaded_fmf is None:
             print 'no .fmf file loaded'
             return
