@@ -58,7 +58,10 @@ class ReplayApp(wx.App):
             assert self.options.plugin is None, "cannot give both --plugin and --plugins arguments"
             self.options.plugins = map(int,self.options.plugins.split(','))
         else:
-            self.options.plugins = [self.options.plugin]
+            if self.options.plugin is not None:
+                self.options.plugins = [self.options.plugin]
+            else:
+                self.options.plugins = [0] # default to first plugin
         del self.options.plugin
 
         self.frame = RES.LoadFrame(None,"FVIEW_FMF_REPLAY_FRAME") # make frame main panel
