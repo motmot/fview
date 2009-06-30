@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import with_statement
 import threading, time, sys, os
 import Queue
 import motmot.utils.config
@@ -18,6 +19,7 @@ os.environ['CAMWIRE_CONF'] = conf_dir
 import motmot.cam_iface.choose as cam_iface_choose
 cam_iface = None
 import numpy as nx
+import numpy as np
 import motmot.FlyMovieFormat.FlyMovieFormat as FlyMovieFormat
 
 from wx import xrc
@@ -427,17 +429,11 @@ def save_func(wxapp,
                 # lock should be held to use wxapp.save_images and
                 # wxapp.fly_movie
 
-                save_info_lock.acquire()
-                nth_frame = wxapp.save_images
-                if nth_frame:
-                    if fno%nth_frame==0:
-                        #n_frames_waiting_pre = in_fnt.qsize()
-                        wxapp.fly_movie.add_frame(frame,save_temporal_value)
-                        #n_frames_waiting_post = in_fnt.qsize()
-                        #if n_frames_waiting_post-n_frames_waiting_pre>=2:
-                        #    print ('WARNING: acquiring frames faster than '
-                        #           'saving (your hard drive may be too slow)')
-                save_info_lock.release()
+                with save_info_lock:
+                    nth_frame = wxapp.save_images
+                    if nth_frame:
+                        if fno%nth_frame==0:
+                            wxapp.fly_movie.add_frame(frame,save_temporal_value)
 
         except Queue.Empty:
             pass
