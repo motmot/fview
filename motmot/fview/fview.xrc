@@ -98,6 +98,18 @@
                   <flag>wxEXPAND</flag>
                 </object>
                 <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <object class="sizeritem">
+                      <object class="wxCheckBox" name="use_host_timestamps">
+                        <label>Use host computer's timestamps</label>
+                        <tooltip>If disabled, uses camera driver's timestamps. (This setting only applies when NOT using CamTrig device.)</tooltip>
+                      </object>
+                    </object>
+                    <orient>wxHORIZONTAL</orient>
+                  </object>
+                  <flag>wxEXPAND</flag>
+                </object>
+                <object class="sizeritem">
                   <object class="wxButton" name="CAM_FRAMERATE_QUERY">
                     <label>query camera</label>
                   </object>

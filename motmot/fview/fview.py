@@ -215,6 +215,7 @@ def grab_func(wxapp,
                 break # use first allocator
 
     send_framerate = False
+    no_ext_trig_timestamp_source = 'camera driver'
 
     try:
         while not quit_now.isSet():
@@ -284,7 +285,12 @@ def grab_func(wxapp,
                     # from CamTrig device
                     save_timestamp = fview_ext_trig_plugin.get_last_trigger_timestamp(cam_id)
                 else:
-                    save_timestamp = timestamp # from camera driver
+                    if no_ext_trig_timestamp_source == 'camera driver':
+                        save_timestamp = timestamp # from camera driver
+                    elif no_ext_trig_timestamp_source == 'host clock':
+                        save_timestamp = now # from computer's own clockcamera driver
+                    else:
+                        raise ValueError('unknown camera timestamp source')
                 in_fnt.put( (cam_iface_buf, xyoffset, save_timestamp, fno) )
             else:
                 showerr('ERROR: not appending new frame to queue, because '
@@ -375,6 +381,8 @@ def grab_func(wxapp,
                         send_framerate = True
                     elif cmd=='framerate query':
                         send_framerate = True
+                    elif cmd=='timestamp source':
+                        no_ext_trig_timestamp_source = cmd_payload
                     else:
                         raise ValueError('unknown command: %s'%cmd)
             except Queue.Empty:
@@ -1220,6 +1228,11 @@ class App(wx.App):
                 wxctrl.SetSelection(0)
             self.register_framerate_query_callback( self.OnReceiveFramerate )
 
+            self.host_timestamp_ctrl = xrc.XRCCTRL( self.cam_framerate_panel,
+                                  "use_host_timestamps")
+            wx.EVT_CHECKBOX(self.host_timestamp_ctrl, self.host_timestamp_ctrl.GetId(),
+                            self.OnUseHostTimestamps)
+
             cphs = []
             n_props = self.cam.get_num_camera_properties()
 
@@ -1319,6 +1332,7 @@ class App(wx.App):
             for plugin in self.plugins:
                 if plugin.get_plugin_name() == 'FView external trigger':
                     self.fview_ext_trig_plugin = plugin
+                    self.host_timestamp_ctrl.Enable(False)
 
             self.pixel_coding = format
 
@@ -1537,6 +1551,14 @@ class App(wx.App):
         val = widget.GetSelection()
 
         self.cam_cmd_queue.put(('TriggerMode Set',val))
+
+    def OnUseHostTimestamps(self,event):
+        widget = event.GetEventObject()
+        val = widget.IsChecked()
+        if val:
+            self.cam_cmd_queue.put(('timestamp source','host clock'))
+        else:
+            self.cam_cmd_queue.put(('timestamp source','camera driver'))
 
     def OnSetROI(self, event):
         if self.ignore_text_events:
