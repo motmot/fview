@@ -80,7 +80,7 @@ class ReplayApp(wx.App,traits.HasTraits):
                 self.options.plugins = [0] # default to first plugin
         del self.options.plugin
 
-        self.frame = wx.Frame(None)
+        self.frame = wx.Frame(None,size=(800,600))
         self.plugins, plugin_dict, bad_plugins = \
                       plugin_manager.load_plugins(self.frame)
 
