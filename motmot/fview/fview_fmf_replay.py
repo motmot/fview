@@ -389,7 +389,7 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
                 linesegs.extend(linesegsi)
             tup = fullsize_image, points, linesegs, timestamp
             im_pts_segs_q.put( tup )
-            #time.sleep(1e-2)
+            time.sleep(1e-5)
     finally:
         playing.clear()
 
