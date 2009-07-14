@@ -26,6 +26,8 @@ class ReplayApp(wx.App,traits.HasTraits):
     save_output_fmf = traits.Any
     play_thread = traits.Any
     show_every_frame = traits.Bool(False)
+    flip_LR = traits.Bool(False)
+    rotate_180 = traits.Bool(False)
 
     traits_view = View( Group( Item('load_fmf_file',
                                     editor=ButtonEditor(),show_label=False),
@@ -33,6 +35,7 @@ class ReplayApp(wx.App,traits.HasTraits):
                                     editor=ButtonEditor(),show_label=False),
                                Item('play_and_save_frames',
                                     editor=ButtonEditor(),show_label=False),
+                                Group(Item('flip_LR'),Item('rotate_180'),orientation='horizontal'),
                                ))
 
     def OnInit(self,*args,**kw):
@@ -305,6 +308,17 @@ class ReplayApp(wx.App,traits.HasTraits):
                                timestamp0,
                                0)
 
+    def _flip_LR_changed(self):
+        self.cam_image_canvas.set_flip_LR(self.flip_LR)
+        self.cam_image_canvas.update_image_and_drawings('camera',
+                                                        self.loaded_fmf['bg_image'],
+                                                        format=self.loaded_fmf['format'])
+
+    def _rotate_180_changed(self):
+        self.cam_image_canvas.set_rotate_180(self.rotate_180)
+        self.cam_image_canvas.update_image_and_drawings('camera',
+                                                        self.loaded_fmf['bg_image'],
+                                                        format=self.loaded_fmf['format'])
 
     def OnTrackerWindowClose(self,event):
         if self.save_output_fmf is not None:
