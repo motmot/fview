@@ -22,6 +22,8 @@ class ReplayApp(wx.App,traits.HasTraits):
     play_frames = traits.Event
     play_and_save_frames = traits.Event
     next_play_is_saved = traits.Bool(False)
+    play_single_frame = traits.Bool(False)
+    play_single_frame_number = traits.Int
     save_output = traits.Bool(False)
     save_output_fmf = traits.Any
     play_thread = traits.Any
@@ -31,6 +33,9 @@ class ReplayApp(wx.App,traits.HasTraits):
 
     traits_view = View( Group( Item('load_fmf_file',
                                     editor=ButtonEditor(),show_label=False),
+                               Group(Item('play_single_frame'),
+                                     Item('play_single_frame_number'),
+                                     orientation='horizontal'),
                                Item('play_frames',
                                     editor=ButtonEditor(),show_label=False),
                                Item('play_and_save_frames',
@@ -177,7 +182,8 @@ class ReplayApp(wx.App,traits.HasTraits):
                 play_func(self.loaded_fmf,
                           self.inq,
                           self.playing,
-                          self.buf_allocator)
+                          self.buf_allocator,
+                          None)
                 for j in range(self.inq.qsize()):
                     tup = self.inq.get(0)
 
@@ -350,10 +356,17 @@ class ReplayApp(wx.App,traits.HasTraits):
             self.save_output = True
             self.show_every_frame = True # need to show every frame when saving
             self.next_play_is_saved = False
+
+        if self.play_single_frame:
+            single_frame_number = self.play_single_frame_number
+        else:
+            single_frame_number = None
+
         self.play_thread = threading.Thread( target=play_func, args=(self.loaded_fmf,
                                                                      self.inq,
                                                                      self.playing,
-                                                                     self.buf_allocator) )
+                                                                     self.buf_allocator,
+                                                                     single_frame_number) )
         self.play_thread.setDaemon(True)#don't let this thread keep app alive
         self.play_thread.start()
 
@@ -361,7 +374,7 @@ class ReplayApp(wx.App,traits.HasTraits):
         self.next_play_is_saved = True
         self.play_frames = True # fire event
 
-def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
+def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator, single_frame_number ):
     global last_frame_info
     playing.set()
     try:
@@ -373,7 +386,12 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator ):
         format = loaded_fmf['format']
 
         fmf.seek(0)
-        for fno in range(n_frames):
+        if single_frame_number is None:
+            all_fnos = range(n_frames)
+        else:
+            all_fnos = [single_frame_number]
+
+        for fno in all_fnos:
             # reconstruct original frame #################
             fullsize_image,timestamp = fmf.get_frame(fno)
             loaded_fmf['bg_image'] = fullsize_image
