@@ -227,6 +227,7 @@ class ReplayApp(wx.App,traits.HasTraits):
                                                                 points=points,
                                                                 linesegs=linesegs,
                                                                 )
+                self.cam_image_canvas.Refresh(eraseBackground=False)
                 if self.save_output:
                     out_frame = self.cam_image_canvas.get_canvas_copy()
                     self.save_output_fmf.add_frame( out_frame, timestamp )
@@ -298,6 +299,7 @@ class ReplayApp(wx.App,traits.HasTraits):
                                                         #xoffset=last_offset[0],
                                                         #yoffset=last_offset[1],
                                                         )
+        self.cam_image_canvas.Refresh(eraseBackground=False)
 
         self.statusbar.SetStatusText('%s loaded'%(os.path.split(fmf_filename)[1],),0)
 
@@ -313,12 +315,14 @@ class ReplayApp(wx.App,traits.HasTraits):
         self.cam_image_canvas.update_image_and_drawings('camera',
                                                         self.loaded_fmf['bg_image'],
                                                         format=self.loaded_fmf['format'])
+        self.cam_image_canvas.Refresh(eraseBackground=False)
 
     def _rotate_180_changed(self):
         self.cam_image_canvas.set_rotate_180(self.rotate_180)
         self.cam_image_canvas.update_image_and_drawings('camera',
                                                         self.loaded_fmf['bg_image'],
                                                         format=self.loaded_fmf['format'])
+        self.cam_image_canvas.Refresh(eraseBackground=False)
 
     def OnTrackerWindowClose(self,event):
         if self.save_output_fmf is not None:
