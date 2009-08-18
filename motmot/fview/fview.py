@@ -1312,11 +1312,15 @@ class App(wx.App):
 
                 except Exception, err:
                     traceback.print_exc(err,sys.stderr)
+                    if self.log_filename is None:
+                        log_filename_str = ''
+                    else:
+                        log_filename_str = ' See\n\n%s'%(self.log_filename,)
                     msg = 'An FView plugin "%s" failed: %s\n\n'\
                           'The plugin will now be disabled, and '\
-                          'the log file will have more details.'%(
+                          'the log will have more details.%s'%(
                         plugin.plugin_name,
-                        str(err))
+                        str(err),log_filename_str)
                     dlg = wx.MessageDialog(self.frame,msg,
                                            'FView plugin error',
                                            wx.OK | wx.ICON_WARNING)
@@ -1370,11 +1374,15 @@ class App(wx.App):
             save_thread.setDaemon(True)
             save_thread.start()
         except Exception,err:
+            if self.log_filename is None:
+                log_filename_str = ''
+            else:
+                log_filename_str = '%s\n\n'%(self.log_filename,)
             dlg = wx.MessageDialog(
                 self.frame, ('An unknown error accessing the camera was '
                              'encountered. The log file will have details. '
-                             'FView will now exit.\n\nThe error was:\n%s'%
-                             (str(err),)),
+                             '\n\n%sFView will now exit. The error '
+                             'was:\n%s'%(log_filename_str,str(err),)),
                 'FView error',
                 wx.OK | wx.ICON_ERROR
                 )
@@ -1803,11 +1811,15 @@ class App(wx.App):
                     )
                 self.cam_image_canvas.Refresh(eraseBackground=False)
         except Exception,err:
+            if self.log_filename is None:
+                log_filename_str = ''
+            else:
+                log_filename_str = '%s\n\n'%(self.log_filename,)
             self.shutdown_error_info=(
                 ('An unknown error updating the screen was '
                  'encountered. The log file will have details. '
-                 'FView will now exit.\n\nThe error '
-                 'was:\n%s'%(str(err),)),
+                 '\n\n%sFView will now exit. The error '
+                 'was:\n%s'%(log_filename_str,str(err),)),
                 'FView error',)
             self.exit_code = 1
             event = wx.CommandEvent(FViewShutdownEvent)
@@ -1862,10 +1874,13 @@ class App(wx.App):
 def main():
     global cam_iface
     if int(os.environ.get('FVIEW_NO_REDIRECT','0')):
+        log_filename = None
         kw = {}
     else:
-	kw = dict(redirect=True,filename='fview.log')
+        log_filename = os.path.abspath( 'fview.log' )
+	kw = dict(redirect=True,filename=log_filename)
     app = App(**kw)
+    app.log_filename = log_filename
 
     if 0:
         # run under profiler
