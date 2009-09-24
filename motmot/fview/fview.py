@@ -215,7 +215,7 @@ def grab_func(wxapp,
                 break # use first allocator
 
     send_framerate = False
-    no_ext_trig_timestamp_source = 'camera driver'
+    timestamp_source = 'camera driver'
 
     try:
         while not quit_now.isSet():
@@ -242,10 +242,10 @@ def grab_func(wxapp,
                 sys.stdout.flush()
 
             try:
-                timestamp=cam.get_last_timestamp()
+                camera_driver_timestamp=cam.get_last_timestamp()
             except cam_iface.CamIFaceError, err:
                 # XXX this is a hack to deal with trouble getting timestamp
-                timestamp = -time.time()
+                camera_driver_timestamp = -time.time()
             fno = cam.get_last_framenumber()
             now = time_func()
             if start is None:
@@ -255,13 +255,22 @@ def grab_func(wxapp,
             if not this_frame_has_good_data:
                 continue
 
+            if timestamp_source == 'camera driver':
+                use_timestamp = camera_driver_timestamp # from camera driver
+            elif timestamp_source == 'host clock':
+                use_timestamp = now # from computer's own clockcamera driver
+            elif timestamp_source == 'CamTrig':
+                use_timestamp = fview_ext_trig_plugin.get_last_trigger_timestamp(cam_id)
+            else:
+                raise ValueError('unknown camera timestamp source')
+
             good_n_frames += 1
 
             plugin_points = []
             plugin_linesegs = []
             for plugin in plugins:
                 points,linesegs = plugin.process_frame(
-                    cam_id, cam_iface_buf, xyoffset, timestamp, fno )
+                    cam_id, cam_iface_buf, xyoffset, use_timestamp, fno )
                 plugin_points.extend( points )
                 plugin_linesegs.extend( linesegs )
 
@@ -281,17 +290,7 @@ def grab_func(wxapp,
 
             if in_fnt.qsize() < 1000:
                 # save a copy of the buffer
-                if fview_ext_trig_plugin is not None:
-                    # from CamTrig device
-                    save_timestamp = fview_ext_trig_plugin.get_last_trigger_timestamp(cam_id)
-                else:
-                    if no_ext_trig_timestamp_source == 'camera driver':
-                        save_timestamp = timestamp # from camera driver
-                    elif no_ext_trig_timestamp_source == 'host clock':
-                        save_timestamp = now # from computer's own clockcamera driver
-                    else:
-                        raise ValueError('unknown camera timestamp source')
-                in_fnt.put( (cam_iface_buf, xyoffset, save_timestamp, fno) )
+                in_fnt.put( (cam_iface_buf, xyoffset, use_timestamp, fno) )
             else:
                 showerr('ERROR: not appending new frame to queue, because '
                         'it already has 1000 frames!')
@@ -382,7 +381,7 @@ def grab_func(wxapp,
                     elif cmd=='framerate query':
                         send_framerate = True
                     elif cmd=='timestamp source':
-                        no_ext_trig_timestamp_source = cmd_payload
+                        timestamp_source = cmd_payload
                     else:
                         raise ValueError('unknown command: %s'%cmd)
             except Queue.Empty:
@@ -1336,7 +1335,9 @@ class App(wx.App):
             for plugin in self.plugins:
                 if plugin.get_plugin_name() == 'FView external trigger':
                     self.fview_ext_trig_plugin = plugin
-                    self.host_timestamp_ctrl.Enable(False)
+                    if self.fview_ext_trig_plugin.trigger_device.real_device:
+                        self.cam_cmd_queue.put(('timestamp source','CamTrig'))
+                        self.host_timestamp_ctrl.Enable(False)
 
             self.pixel_coding = format
 
