@@ -255,6 +255,14 @@ def grab_func(wxapp,
             if not this_frame_has_good_data:
                 continue
 
+            plugin_points = []
+            plugin_linesegs = []
+            if fview_ext_trig_plugin is not None:
+                points,linesegs = fview_ext_trig_plugin.process_frame(
+                    cam_id, cam_iface_buf, xyoffset, camera_driver_timestamp, fno )
+                plugin_points.extend( points )
+                plugin_linesegs.extend( linesegs )
+
             if timestamp_source == 'camera driver':
                 use_timestamp = camera_driver_timestamp # from camera driver
             elif timestamp_source == 'host clock':
@@ -266,9 +274,10 @@ def grab_func(wxapp,
 
             good_n_frames += 1
 
-            plugin_points = []
-            plugin_linesegs = []
             for plugin in plugins:
+                if plugin is fview_ext_trig_plugin:
+                    # already did this plugin above
+                    continue
                 points,linesegs = plugin.process_frame(
                     cam_id, cam_iface_buf, xyoffset, use_timestamp, fno )
                 plugin_points.extend( points )
