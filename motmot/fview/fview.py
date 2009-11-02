@@ -469,12 +469,15 @@ class CameraParameterHelper:
         self.fview_app = fview_app
         del fview_app
 
+        self.present = True
         self.props = cam.get_camera_property_info(self.prop_num)
         if not self.props['is_present']:
             self.present = False
             return
-        else:
-            self.present = True
+        elif 'available' in self.props: # added in libcamiface 0.5.7, motmot.camiface 0.4.8
+            if not self.props['available']:
+                self.present = False
+                return
 
         self.current_value, self.current_is_auto = cam.get_camera_property(
             self.prop_num)
