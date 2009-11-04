@@ -237,6 +237,9 @@ def grab_func(wxapp,
             except cam_iface.FrameDataMissing:
                 #showerr('WARNING: frame data missing')
                 this_frame_has_good_data = False
+            except cam_iface.FrameDataCorrupt:
+                #showerr('WARNING: frame data missing')
+                this_frame_has_good_data = False
             if USE_DEBUG:
                 sys.stdout.write('.')
                 sys.stdout.flush()
