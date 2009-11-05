@@ -481,6 +481,17 @@ class CameraParameterHelper:
             if not self.props['available']:
                 self.present = False
                 return
+        elif not self.props['has_manual_mode']:
+
+            # Temperature on Dragonfly2 doesn't like to be read out,
+            # even though it reports being readout_capable. Don't
+            # build a control for it.
+
+            # (TODO: self.props['original_value'] could be used to set
+            # the value in the GUI and get_camera_property could not
+            # be called.)
+            self.present = False
+            return
 
         self.current_value, self.current_is_auto = cam.get_camera_property(
             self.prop_num)
