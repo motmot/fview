@@ -477,8 +477,8 @@ class CameraParameterHelper:
         if not self.props['is_present']:
             self.present = False
             return
-        elif 'available' in self.props: # added in libcamiface 0.5.7, motmot.camiface 0.4.8
-            if not self.props['available']:
+        elif ('available' in self.props and # added in libcamiface 0.5.7, motmot.camiface 0.4.8
+              not self.props['available']):
                 self.present = False
                 return
         elif not self.props['has_manual_mode']:
