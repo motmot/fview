@@ -40,7 +40,8 @@ RES.LoadFromString(open(RESFILE).read())
 
 def my_loadpanel(parent,panel_name):
     orig_dir = os.path.abspath(os.curdir)
-    os.chdir(RESDIR)
+    if os.path.exists(RESDIR): # sometimes RESDIR can be "" (GH-1)
+        os.chdir(RESDIR)
     try:
         result = RES.LoadPanel(parent,panel_name)
     finally:
