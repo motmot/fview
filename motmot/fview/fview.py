@@ -9,6 +9,7 @@ from version import __version__ # fview.version
 
 import wx
 import motmot.wxvalidatedtext.wxvalidatedtext as wxvt
+from optparse import OptionParser
 
 # set environment variable before importing cam_iface (camwire on linux)
 A602f_conf = pkg_resources.resource_filename(__name__,'A602f.conf')
@@ -767,7 +768,10 @@ def _need_cam_iface():
         cam_iface = cam_iface_choose.import_backend(backend,wrapper)
 
 class App(wx.App):
+
     def OnInit(self,*args,**kw):
+        global options
+        self.options = options # hack to workaround not passing args to OnInit
         self.save_images = 0 # save every nth image, 0 = false
         self.cam_ids = {}
         self.exit_code = 0
@@ -1097,8 +1101,20 @@ class App(wx.App):
         return True
 
     def _load_plugins(self):
-        plugins, plugin_dict, bad_plugins = \
-                 plugin_manager.load_plugins(self.frame)
+        result = plugin_manager.load_plugins(
+            self.frame,
+            use_plugins=self.options.plugins,
+            return_plugin_names=self.options.show_plugins)
+
+        if self.options.show_plugins:
+            print 'plugin description'
+            print '------ -----------'
+            for i,plugin in enumerate(result):
+                print '    ',i,plugin
+            sys.exit(0)
+
+        plugins, plugin_dict, bad_plugins = result
+
         self.plugins = plugins
         self.plugin_dict = plugin_dict
         if len(bad_plugins):
@@ -1111,6 +1127,13 @@ class App(wx.App):
                                        wx.OK | wx.ICON_WARNING)
                 dlg.ShowModal()
                 dlg.Destroy()
+
+        if self.options.show_plugins:
+            print 'plugin description'
+            print '------ -----------'
+            for i,plugin in enumerate(self.plugins):
+                print '    ',i,plugin
+            sys.exit(0)
 
     def OnAboutFView(self, event):
         _need_cam_iface()
@@ -1906,6 +1929,22 @@ def main():
     else:
         log_filename = os.path.abspath( 'fview.log' )
 	kw = dict(redirect=True,filename=log_filename)
+
+    usage = '%prog [options]'
+
+    parser = OptionParser(usage)
+    parser.add_option("--plugins", type='string',
+                      help="choose multiple plugins (e.g. '2,3')",
+                      default=None)
+    parser.add_option("--show-plugins", action='store_true',
+                      help="show plugin numbers and names (then quit)",
+                      default=False)
+    global options
+    (options, args) = parser.parse_args()
+
+    if options.plugins is not None:
+        options.plugins = [int(p) for p in options.plugins.split(',') if p != '']
+
     app = App(**kw)
     app.log_filename = log_filename
 

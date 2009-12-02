@@ -3,15 +3,33 @@ import wx
 import sys, os
 import warnings, traceback
 
-def load_plugins(wxframe):
+def load_plugins(wxframe,use_plugins=None,return_plugin_names=False):
+    """
+    Optional arguments
+    ------------------
+    use_plugins - list
+    list of plugin numbers to load
+    return_plugin_names - boolean
+    if True, return ordered list of plugin names and do nothing else
+    """
     PluginClassesAndNames = []
     loaded_components = []
     pkg_env = pkg_resources.Environment()
+    count = 0
+    plugin_names = []
     for name in pkg_env:
         egg = pkg_env[name][0]
         modules = []
 
         for name in egg.get_entry_map('motmot.fview.plugins'):
+            this_plugin_number = count
+            count += 1
+            plugin_names.append(name)
+            if return_plugin_names:
+                continue
+            if use_plugins is not None:
+                if this_plugin_number not in use_plugins:
+                    continue
             egg.activate()
             entry_point = egg.get_entry_info('motmot.fview.plugins', name)
             if entry_point.module_name not in loaded_components:
@@ -42,6 +60,9 @@ def load_plugins(wxframe):
                 PluginClassesAndNames.append( (PluginClass,name) )
                 modules.append(entry_point.module_name)
                 loaded_components.append(entry_point.module_name)
+    if return_plugin_names:
+        return plugin_names
+
     # make instances of plugins
     plugins = []
     bad_plugins = {}

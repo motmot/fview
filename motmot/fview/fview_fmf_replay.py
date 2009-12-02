@@ -53,7 +53,7 @@ class ReplayApp(wx.App,traits.HasTraits):
                           default=None)
 
         parser.add_option("--plugins", type='string',
-                          help="choose multiple plugins (e.g. 2,3)",
+                          help="choose multiple plugins (e.g. '2,3')",
                           default=None)
 
         parser.add_option("--play-n-times-and-quit", type='int',
@@ -89,8 +89,19 @@ class ReplayApp(wx.App,traits.HasTraits):
         del self.options.plugin
 
         self.frame = wx.Frame(None,size=(800,600))
-        self.plugins, plugin_dict, bad_plugins = \
-                      plugin_manager.load_plugins(self.frame)
+        result = plugin_manager.load_plugins(
+            self.frame,
+            use_plugins=self.options.plugins,
+            return_plugin_names=self.options.show_plugins)
+
+        if self.options.show_plugins:
+            print 'plugin description'
+            print '------ -----------'
+            for i,plugin in enumerate(result):
+                print '    ',i,plugin
+            sys.exit(0)
+
+        self.plugins, plugin_dict, bad_plugins = result
 
         if len(bad_plugins):
             for name, (err,full_err) in bad_plugins.iteritems():
@@ -152,8 +163,7 @@ class ReplayApp(wx.App,traits.HasTraits):
 
         self.trackers = []
 
-        for plugin in self.options.plugins:
-            tracker = self.plugins[plugin]
+        for tracker in self.plugins:
             self.trackers.append( tracker )
             tracker.get_frame().Show()
 
