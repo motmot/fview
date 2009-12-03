@@ -80,7 +80,8 @@ class ReplayApp(wx.App,traits.HasTraits):
 
         if self.options.plugins is not None:
             assert self.options.plugin is None, "cannot give both --plugin and --plugins arguments"
-            self.options.plugins = map(int,self.options.plugins.split(','))
+            self.options.plugins = [
+                int(p) for p in self.options.plugins.split(',') if p != '']
         else:
             if self.options.plugin is not None:
                 self.options.plugins = [self.options.plugin]
