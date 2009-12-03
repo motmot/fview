@@ -155,9 +155,6 @@ class ReplayApp(wx.App,traits.HasTraits):
         self.playing = threading.Event()
 
         # initialize Tracker
-        if not len(self.plugins):
-            raise ValueError('There are no plugins. Therefore, '
-                             'there is no point in running fmf replay')
         for plugin in self.plugins:
             if hasattr(plugin,'set_all_fview_plugins'):
                 plugin.set_all_fview_plugins(self.plugins)
