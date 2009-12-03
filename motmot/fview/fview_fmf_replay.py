@@ -185,7 +185,7 @@ class ReplayApp(wx.App,traits.HasTraits):
             if self.options.play_n_times_and_quit < 2:
                 raise ValueError('must replay at least twice')
             for i in range(self.options.play_n_times_and_quit):
-                if i==1:
+                if i==0:
                     time_start=time.time()
                 play_func(self.loaded_fmf,
                           self.inq,
