@@ -193,7 +193,7 @@ class ReplayApp(wx.App,traits.HasTraits):
                           self.buf_allocator,
                           None)
                 for j in range(self.inq.qsize()):
-                    tup = self.inq.get(0)
+                    tup = self.inq.get_nowait()
 
             time_stop = time.time()
             self.frame.Close()
@@ -210,49 +210,56 @@ class ReplayApp(wx.App,traits.HasTraits):
 
         tup = None
 
-        try:
-            tup = self.inq.get(0)
-            while not self.show_every_frame:
-                tup = self.inq.get(0)
-            if self.save_output_fmf is not None:
-                self.statusbar.SetStatusText(
-                    'saving %s'%self.save_output_fmf.filename,1)
-            else:
-                self.statusbar.SetStatusText('playing',1)
-        except Queue.Empty:
-            pass
+        while True:
+            had_input_image = False
+            try:
+                tup = self.inq.get_nowait()
+                had_input_image = True
+                while not self.show_every_frame:
+                    tup = self.inq.get_nowait()
+                if self.save_output_fmf is not None:
+                    self.statusbar.SetStatusText(
+                        'saving %s'%self.save_output_fmf.filename,1)
+                else:
+                    self.statusbar.SetStatusText('playing',1)
+            except Queue.Empty:
+                pass
 
-        if (tup is None and
-            self.options.pump and
-            last_frame_info is not None):
-            for tracker in self.trackers:
-                points,linesegs = tracker.process_frame(*last_frame_info)
-            im = last_frame_info[1]
-            timestamp = last_frame_info[3]
-            tup = im, points, linesegs, timestamp
+            if (tup is None and
+                self.options.pump and
+                last_frame_info is not None):
+                for tracker in self.trackers:
+                    points,linesegs = tracker.process_frame(*last_frame_info)
+                im = last_frame_info[1]
+                timestamp = last_frame_info[3]
+                tup = im, points, linesegs, timestamp
 
-        if not self.options.quick:
-            if tup is not None:
-                im, points, linesegs, timestamp = tup
-                # display on screen
-                self.cam_image_canvas.update_image_and_drawings('camera',
-                                                                im,
-                                                                format=self.loaded_fmf['format'],
-                                                                points=points,
-                                                                linesegs=linesegs,
-                                                                )
-                self.cam_image_canvas.Refresh(eraseBackground=False)
-                if self.save_output:
-                    out_frame = self.cam_image_canvas.get_canvas_copy()
-                    self.save_output_fmf.add_frame( out_frame, timestamp )
+            if not self.options.quick:
+                if tup is not None:
+                    im, points, linesegs, timestamp = tup
+                    # display on screen
+                    self.cam_image_canvas.update_image_and_drawings('camera',
+                                                                    im,
+                                                                    format=self.loaded_fmf['format'],
+                                                                    points=points,
+                                                                    linesegs=linesegs,
+                                                                    )
+                    self.cam_image_canvas.Refresh(eraseBackground=False)
+                    if self.save_output:
+                        out_frame = self.cam_image_canvas.get_canvas_copy()
+                        self.save_output_fmf.add_frame( out_frame, timestamp )
 
-        if not self.playing.isSet():
-            # stop vestiges of saving after done playing
-            self.save_output = False
-            self.show_every_frame = False
-            if self.save_output_fmf is not None:
-                self.save_output_fmf.close()
-                self.save_output_fmf = None
+            if not self.playing.isSet():
+                # stop vestiges of saving after done playing
+                self.save_output = False
+                self.show_every_frame = False
+                if self.save_output_fmf is not None:
+                    self.save_output_fmf.close()
+                    self.save_output_fmf = None
+
+            if not had_input_image:
+                # no more frames were in inq
+                break
 
     def _load_fmf_file_fired(self,event):
         doit=False
@@ -400,6 +407,10 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator, single_frame_nu
             all_fnos = [single_frame_number]
 
         for fno in all_fnos:
+            if im_pts_segs_q.qsize() >= 5:
+                # don't fill buffer too much
+                time.sleep(0.010)
+
             # reconstruct original frame #################
             fullsize_image,timestamp = fmf.get_frame(fno)
             loaded_fmf['bg_image'] = fullsize_image
