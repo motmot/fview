@@ -10,12 +10,14 @@ setup(name='motmot.fview',
       zip_safe=True,
       namespace_packages = ['motmot','motmot.fview'],
       packages = find_packages(),
-      entry_points = {'gui_scripts': ['fview=motmot.fview.fview:main',
-                                      'fview_fmf_replay = motmot.fview.fview_fmf_replay:main',
-                                      ]},
+      entry_points = {
+    'gui_scripts': ['fview=motmot.fview.fview:main',
+                    'fview_fmf_replay = motmot.fview.fview_fmf_replay:main',
+                    ]},
       package_data = {'motmot.fview':['fview.xrc','fview.gif',
                                       'fview_icon2.png', # for .desktop icon
                                       ]},
-      eager_resources = ['motmot/fview/fview.xrc','motmot/fview/fview.gif',  # unpack files together
+      eager_resources = ['motmot/fview/fview.xrc',
+                         'motmot/fview/fview.gif',
                          ],
       )
