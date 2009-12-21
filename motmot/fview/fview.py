@@ -11,12 +11,6 @@ import wx
 import motmot.wxvalidatedtext.wxvalidatedtext as wxvt
 from optparse import OptionParser
 
-# set environment variable before importing cam_iface (camwire on linux)
-A602f_conf = pkg_resources.resource_filename(__name__,'A602f.conf')
-# other conf files in same directory, so this works for any camera
-conf_dir = os.path.split(A602f_conf)[0]
-os.environ['CAMWIRE_CONF'] = conf_dir
-
 import motmot.cam_iface.choose as cam_iface_choose
 cam_iface = None
 import numpy as nx
