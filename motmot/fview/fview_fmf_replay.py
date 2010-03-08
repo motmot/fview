@@ -21,13 +21,14 @@ class ReplayApp(wx.App,traits.HasTraits):
     load_fmf_file = traits.Event
     play_frames = traits.Event
     play_and_save_frames = traits.Event
+    gui_show_all_frames = traits.Bool(True) # use by user - allow display disable for speed
     next_play_is_saved = traits.Bool(False)
     play_single_frame = traits.Bool(False)
     play_single_frame_number = traits.Int
     save_output = traits.Bool(False)
     save_output_fmf = traits.Any
     play_thread = traits.Any
-    show_every_frame = traits.Bool(False)
+    show_every_frame = traits.Bool(False) # internal use - whether to show frames
     flip_LR = traits.Bool(False)
     rotate_180 = traits.Bool(False)
 
@@ -35,6 +36,7 @@ class ReplayApp(wx.App,traits.HasTraits):
                                     editor=ButtonEditor(),show_label=False),
                                Group(Item('play_single_frame'),
                                      Item('play_single_frame_number'),
+                                     Item('gui_show_all_frames'),
                                      orientation='horizontal'),
                                Item('play_frames',
                                     editor=ButtonEditor(),show_label=False),
@@ -181,6 +183,10 @@ class ReplayApp(wx.App,traits.HasTraits):
             fmf_filename = args[0]
             self.load_fmf(fmf_filename)
 
+
+        self.gui_show_all_frames_event = threading.Event()
+        self._gui_show_all_frames_changed() # fake trigger trait notification
+
         if self.options.play_n_times_and_quit is not None:
             if self.options.play_n_times_and_quit < 2:
                 raise ValueError('must replay at least twice')
@@ -191,7 +197,8 @@ class ReplayApp(wx.App,traits.HasTraits):
                           self.inq,
                           self.playing,
                           self.buf_allocator,
-                          None)
+                          None,
+                          self.gui_show_all_frames_event )
                 for j in range(self.inq.qsize()):
                     tup = self.inq.get_nowait()
 
@@ -204,6 +211,13 @@ class ReplayApp(wx.App,traits.HasTraits):
             print('After warmup, %.1f fps (%.1f msec/frame)'%(fps,1000.0/fps))
 
         return True
+
+    def _gui_show_all_frames_changed(self):
+        if self.gui_show_all_frames:
+            self.gui_show_all_frames_event.set()
+        else:
+            self.gui_show_all_frames_event.clear()
+
 
     def OnTimer(self,event):
         global last_frame_info
@@ -381,7 +395,8 @@ class ReplayApp(wx.App,traits.HasTraits):
                                                                      self.inq,
                                                                      self.playing,
                                                                      self.buf_allocator,
-                                                                     single_frame_number) )
+                                                                     single_frame_number,
+                                                                     self.gui_show_all_frames_event))
         self.play_thread.setDaemon(True)#don't let this thread keep app alive
         self.play_thread.start()
 
@@ -389,7 +404,7 @@ class ReplayApp(wx.App,traits.HasTraits):
         self.next_play_is_saved = True
         self.play_frames = True # fire event
 
-def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator, single_frame_number ):
+def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator, single_frame_number, gui_show_all_frames ):
     global last_frame_info
     playing.set()
     try:
@@ -407,7 +422,7 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator, single_frame_nu
             all_fnos = [single_frame_number]
 
         for fno in all_fnos:
-            if im_pts_segs_q.qsize() >= 5:
+            if gui_show_all_frames.isSet() and im_pts_segs_q.qsize() >= 5:
                 # don't fill buffer too much
                 time.sleep(0.010)
 
@@ -444,7 +459,8 @@ def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator, single_frame_nu
                 linesegs.extend(linesegsi)
             tup = fullsize_image, points, linesegs, timestamp
             im_pts_segs_q.put( tup )
-            time.sleep(1e-5)
+            if gui_show_all_frames.isSet():
+                time.sleep(1e-5)
     finally:
         playing.clear()
 
