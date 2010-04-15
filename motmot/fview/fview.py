@@ -20,6 +20,7 @@ import motmot.FlyMovieFormat.FlyMovieFormat as FlyMovieFormat
 from wx import xrc
 import plugin_manager
 import traceback
+import warnings
 
 if int(os.environ.get('FVIEW_NO_OPENGL','0')):
     import motmot.wxvideo.wxvideo as video_module
@@ -61,7 +62,10 @@ def save_rc_params():
     save_fname = motmot.utils.config.rc_fname(must_already_exist=False,
                                               filename='fviewrc',
                                               dirname='.fview')
-    motmot.utils.config.save_rc_params(save_fname,rc_params)
+    try:
+        motmot.utils.config.save_rc_params(save_fname,rc_params)
+    except IOError, err:
+        warnings.warn('ERROR saving config file: %s'%err)
 rc_params = get_rc_params()
 ########
 
