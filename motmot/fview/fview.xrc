@@ -248,10 +248,24 @@
                 </object>
                 <object class="sizeritem">
                   <object class="wxBoxSizer">
+                    <object class="sizeritem">
+                      <object class="wxStaticText">
+                        <label>Prefix:</label>
+                        <style>wxALIGN_RIGHT</style>
+                      </object>
+                      <option>0</option>
+                      <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="MOVIE_FNAME_PREFIX">
+                        <value>movie</value>
+                      </object>
+                      <option>1</option>
+                    </object>
                     <orient>wxHORIZONTAL</orient>
                   </object>
-                  <option>1</option>
                   <flag>wxALL|wxEXPAND</flag>
+                  <border>10</border>
                 </object>
                 <object class="sizeritem">
                   <object class="wxBoxSizer">

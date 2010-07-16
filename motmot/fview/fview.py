@@ -1753,6 +1753,9 @@ class App(wx.App):
     def OnStartRecord(self, event):
         if not self.save_images:
 
+            prefix = xrc.XRCCTRL( self.cam_record_panel,
+                                  'MOVIE_FNAME_PREFIX').GetValue()
+
             nth_frame_ctrl = xrc.XRCCTRL(
                 self.cam_record_panel, "NTH_FRAME_TEXT")
 
@@ -1769,7 +1772,7 @@ class App(wx.App):
                 dlg.Show()
                 nth_frame = 1
 
-            filename = time.strftime( 'movie%Y%m%d_%H%M%S.fmf' )
+            filename = prefix + time.strftime( '%Y%m%d_%H%M%S.fmf' )
             fullpath = os.path.join( self.record_dir, filename )
             self.start_streaming(fullpath,nth_frame)
             if nth_frame == 1:
