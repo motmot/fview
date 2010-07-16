@@ -652,15 +652,24 @@ class InitCameraDialog(wx.Dialog):
             #label = wx.StaticText(self, -1, "Camera #%d:"%(idx+1,))
             #flexgridsizer.Add(label, 0, wx.ALIGN_RIGHT|wx.TOP|wx.BOTTOM, 5)
 
-            this_cam_string = "%s %s (%s)"%(
-                str(cam_info[idx]['vendor']),
-                str(cam_info[idx]['model']),
-                str(cam_info[idx]['chip']))
+            if cam_info[idx] is not None:
+                this_cam_string = "%s %s (%s)"%(
+                    str(cam_info[idx]['vendor']),
+                    str(cam_info[idx]['model']),
+                    str(cam_info[idx]['chip']))
+            else:
+                this_cam_string = '(unavailable camera)'
             radio = wx.RadioButton( self, -1, this_cam_string )
+            if cam_info[idx] is None:
+                radio.Enable(False)
             self.radios.append(radio)
             flexgridsizer.Add(radio, 0, wx.ALIGN_CENTRE)
 
-            text = wx.TextCtrl(self, -1, str(cam_info[idx]['num_buffers']),
+            if cam_info[idx] is not None:
+                num_buf_str = str(cam_info[idx]['num_buffers'])
+            else:
+                num_buf_str = '0'
+            text = wx.TextCtrl(self, -1, num_buf_str,
                                style=wx.TE_CENTRE)
             wxvt.setup_validated_integer_callback(text,
                                                   text.GetId(),
@@ -668,7 +677,10 @@ class InitCameraDialog(wx.Dialog):
             self.num_buffers.append(text)
 
             flexgridsizer.Add(text, 0, wx.ALIGN_CENTRE)
-            mode_choice_strings=cam_info[idx]['mode_choice_strings']
+            if cam_info[idx] is not None:
+                mode_choice_strings=cam_info[idx]['mode_choice_strings']
+            else:
+                mode_choice_strings=[]
             mode_choice = wx.Choice(self, -1, choices=mode_choice_strings)
             choice = 0
             for i,mode_choice_string in enumerate(mode_choice_strings):
@@ -684,7 +696,8 @@ class InitCameraDialog(wx.Dialog):
                         break
             mode_choice.SetSelection(choice)
             flexgridsizer.Add(mode_choice, 0, wx.ALIGN_CENTRE)
-            cam_info[idx]['mode_choice_control'] = mode_choice
+            if cam_info[idx] is not None:
+                cam_info[idx]['mode_choice_control'] = mode_choice
 
         sizer.Add(flexgridsizer, 0, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5)
 
@@ -1169,47 +1182,51 @@ class App(wx.App):
             num_cameras = cam_iface.get_num_cameras()
 
             cam_info = []
-            try:
-                for idx in range(num_cameras):
+            bad_cameras = False
+            for idx in range(num_cameras):
+                try:
                     vendor, model, chip = cam_iface.get_camera_info(idx)
                     mode_choice_strings = []
                     for mode_number in range( cam_iface.get_num_modes(idx) ):
                         mode_choice_strings.append(
                             cam_iface.get_mode_string(idx,mode_number))
-
-                    cam_name_string = "num_buffers('%s','%s')"%(vendor,model)
-                    if cam_name_string in rc_params:
-                        num_buffers = rc_params[cam_name_string]
-                    else:
-                        if vendor == 'Basler' and model == 'A602f':
-                            num_buffers = 100
-                        elif vendor == 'Basler' and model == 'A622f':
-                            num_buffers = 50
-                        elif vendor == 'Unibrain' and model == 'Fire-i BCL 1.2':
-                            num_buffers = 100
-                        elif vendor == 'Unibrain' and model == 'Fire-i BBW 1.3':
-                            num_buffers = 100
-                        elif vendor == 'Point Grey Research' and model=='Scorpion':
-                            num_buffers = 32
-                        else:
-                            num_buffers = 32
-                    if sys.platform.startswith('win'):
-                        num_buffers = 10 # for some reason, this seems to be the max, at least with CMU1394
-                    cam_info.append( dict(vendor=vendor,
-                                          model=model,
-                                          chip=chip,
-                                          num_buffers=num_buffers,
-                                          mode_choice_strings=mode_choice_strings,
-                                          ) )
                 # closes for loop
-            except cam_iface.CamIFaceError, x:
+                except cam_iface.CamIFaceError, err:
+                    traceback.print_exc(err,sys.stderr)
+                    bad_cameras = True
+                    cam_info.append( None )
+                    continue
+
+                cam_name_string = "num_buffers('%s','%s')"%(vendor,model)
+                if cam_name_string in rc_params:
+                    num_buffers = rc_params[cam_name_string]
+                else:
+                    if vendor == 'Basler' and model == 'A602f':
+                        num_buffers = 100
+                    elif vendor == 'Basler' and model == 'A622f':
+                        num_buffers = 50
+                    elif vendor == 'Unibrain' and model == 'Fire-i BCL 1.2':
+                        num_buffers = 100
+                    elif vendor == 'Unibrain' and model == 'Fire-i BBW 1.3':
+                        num_buffers = 100
+                    elif vendor == 'Point Grey Research' and model=='Scorpion':
+                        num_buffers = 32
+                    else:
+                        num_buffers = 32
+                if sys.platform.startswith('win'):
+                    num_buffers = 10 # for some reason, this seems to be the max, at least with CMU1394
+                cam_info.append( dict(vendor=vendor,
+                                      model=model,
+                                      chip=chip,
+                                      num_buffers=num_buffers,
+                                      mode_choice_strings=mode_choice_strings,
+                                      ) )
+            if bad_cameras:
                 dlg = wx.MessageDialog(self.frame, str(x),
-                                       'Error getting camera information',
+                                       'Error getting camera information (see the log for details)',
                                        wx.OK | wx.ICON_ERROR)
                 dlg.ShowModal()
                 dlg.Destroy()
-                return
-
             dlg = InitCameraDialog(self.frame, -1, "Select camera & parameters",
                                    size=wx.DefaultSize, pos=wx.DefaultPosition,
                                    style=wx.DEFAULT_DIALOG_STYLE,
@@ -1233,6 +1250,7 @@ class App(wx.App):
             # allocate 400 MB then delete, just to get some respec' from OS:
             nx.zeros((400*1024,),nx.uint8)
 
+            assert cam_info[cam_no_selected] is not None
             mode_choice = cam_info[cam_no_selected]['mode_choice_control']
             mode_number = mode_choice.GetSelection()
 
