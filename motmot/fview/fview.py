@@ -52,6 +52,7 @@ def get_rc_params():
         'flipLR'  : True,
         'rotate180'  : False,
         'view_interval' : 1,
+        'movie_fname_prefix' : 'movie',
         }
     fviewrc_fname = motmot.utils.config.rc_fname(filename='fviewrc',
                                                  dirname='.fview')
@@ -1061,6 +1062,15 @@ class App(wx.App):
         wx.EVT_BUTTON(wxctrl, wxctrl.GetId(),
                    self.OnStopRecord)
 
+
+        wxctrl = xrc.XRCCTRL( self.cam_record_panel,
+                              'MOVIE_FNAME_PREFIX')
+        wxctrl.SetValue(rc_params['movie_fname_prefix'])
+        self.fname_prefix_validator = wxvt.Validator( wxctrl, wxctrl.GetId(),
+                                                      self.OnFnamePrefix,
+                                                      self.filename_validator_func,
+                                                      ignore_initial_value=True)
+
         # Set view options
         viewmenu.Check(ID_rotate180,rc_params['rotate180'])
         self.cam_image_canvas.set_rotate_180( viewmenu.IsChecked(ID_rotate180) )
@@ -1525,6 +1535,16 @@ class App(wx.App):
                 self.record_dir = dlg.GetPath()
         finally:
             dlg.Destroy()
+
+    def OnFnamePrefix(self, event):
+        widget = event.GetEventObject()
+        new_value = widget.GetValue()
+        rc_params['movie_fname_prefix'] = new_value
+        save_rc_params()
+
+    def filename_validator_func(self,input_string):
+        # Could complain about invalid filename characters here...
+        return True
 
     def OnBackendChoice(self, event):
         dlg = BackendChoiceDialog(self.frame)
