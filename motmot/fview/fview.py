@@ -1235,12 +1235,6 @@ class App(wx.App):
                                       num_buffers=num_buffers,
                                       mode_choice_strings=mode_choice_strings,
                                       ) )
-            if bad_cameras:
-                dlg = wx.MessageDialog(self.frame, str(err),
-                                       'Error getting camera information (see the log for details)',
-                                       wx.OK | wx.ICON_ERROR)
-                dlg.ShowModal()
-                dlg.Destroy()
             dlg = InitCameraDialog(self.frame, -1, "Select camera & parameters",
                                    size=wx.DefaultSize, pos=wx.DefaultPosition,
                                    style=wx.DEFAULT_DIALOG_STYLE,
