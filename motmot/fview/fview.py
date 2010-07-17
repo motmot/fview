@@ -683,9 +683,12 @@ class InitCameraDialog(wx.Dialog):
             mode_choice = wx.Choice(self, -1, choices=mode_choice_strings)
 
             if cam_info[idx] is None:
+                radio.SetValue(False)
                 radio.Enable(False)
                 text.Enable(False)
                 mode_choice.Enable(False)
+            else:
+                radio.SetValue(True)
 
             choice = 0
             for i,mode_choice_string in enumerate(mode_choice_strings):
