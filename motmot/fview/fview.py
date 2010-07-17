@@ -1232,7 +1232,7 @@ class App(wx.App):
                                       mode_choice_strings=mode_choice_strings,
                                       ) )
             if bad_cameras:
-                dlg = wx.MessageDialog(self.frame, str(x),
+                dlg = wx.MessageDialog(self.frame, str(err),
                                        'Error getting camera information (see the log for details)',
                                        wx.OK | wx.ICON_ERROR)
                 dlg.ShowModal()
