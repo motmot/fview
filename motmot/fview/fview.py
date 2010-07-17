@@ -661,8 +661,6 @@ class InitCameraDialog(wx.Dialog):
             else:
                 this_cam_string = '(unavailable camera)'
             radio = wx.RadioButton( self, -1, this_cam_string )
-            if cam_info[idx] is None:
-                radio.Enable(False)
             self.radios.append(radio)
             flexgridsizer.Add(radio, 0, wx.ALIGN_CENTRE)
 
@@ -681,8 +679,14 @@ class InitCameraDialog(wx.Dialog):
             if cam_info[idx] is not None:
                 mode_choice_strings=cam_info[idx]['mode_choice_strings']
             else:
-                mode_choice_strings=[]
+                mode_choice_strings=['(no mode)']
             mode_choice = wx.Choice(self, -1, choices=mode_choice_strings)
+
+            if cam_info[idx] is None:
+                radio.Enable(False)
+                text.Enable(False)
+                mode_choice.Enable(False)
+
             choice = 0
             for i,mode_choice_string in enumerate(mode_choice_strings):
                 if 'DC1394_VIDEO_MODE_FORMAT7_0' in mode_choice_string:
