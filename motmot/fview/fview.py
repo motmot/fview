@@ -129,16 +129,6 @@ class SharedValue:
         self.evt.clear()
         return val
 
-VENDOR_MODEL_SHUTTER_TEXT = {'Basler':{'A602f':'Shutter (msec):',
-                                       'A622f':'Shutter (msec):',
-                                       },
-                             }
-
-VENDOR_MODEL_SHUTTER_SCALE = {'Basler':{'A602f':0.02, # msecs per tick
-                                        'A622f':0.02, # msecs per tick
-                                        },
-                              }
-
 in_fnt = Queue.Queue()
 
 def grab_func(wxapp,
