@@ -852,6 +852,11 @@ class App(wx.App):
         # view menu
         viewmenu = wx.Menu()
 
+        ID_show_live_images = wx.NewId()
+        self.show_live_images = viewmenu.Append(ID_show_live_images, "show live images",
+                                                "Show live images from camera", wx.ITEM_CHECK)
+        viewmenu.Check(ID_show_live_images,True)
+
         ID_rotate180 = wx.NewId()
         viewmenu.Append(ID_rotate180, "rotate 180 degrees",
                         "Rotate camera view 1800 degrees", wx.ITEM_CHECK)
@@ -1845,6 +1850,9 @@ class App(wx.App):
             if self.save_images:
                 if not self.update_display_while_saving:
                     return
+            
+            if not self.show_live_images.IsChecked():
+                return
 
             # copy stuff ASAP
             self.image_update_lock.acquire()
