@@ -1,4 +1,8 @@
-import enthought.traits.api as traits
+try:
+    import enthought.traits.api as traits
+except:
+    # from traits 4.0
+    import traits.api as traits
 import wx
 
 class HasTraits_FViewPlugin(traits.HasTraits):
