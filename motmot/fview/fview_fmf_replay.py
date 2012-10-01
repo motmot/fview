@@ -10,8 +10,8 @@ else:
 import sys
 import motmot.fview.plugin_manager as plugin_manager # fview's own plugin_manager
 from optparse import OptionParser
-import enthought.traits.api as traits
-from enthought.traits.ui.api import View, Item, Group, Handler, HGroup, \
+import traits.api as traits
+from traitsui.api import View, Item, Group, Handler, HGroup, \
      VGroup, RangeEditor, InstanceEditor, ButtonEditor
 
 global last_frame_info
