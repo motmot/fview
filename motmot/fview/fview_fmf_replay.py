@@ -263,7 +263,7 @@ class ReplayApp(wx.App,traits.HasTraits):
                         out_frame = self.cam_image_canvas.get_canvas_copy()
                         self.save_output_fmf.add_frame( out_frame, timestamp )
 
-            if not self.playing.isSet():
+            if not self.playing.isSet() and self.inq.qsize() == 0:
                 # stop vestiges of saving after done playing
                 self.save_output = False
                 self.show_every_frame = False
