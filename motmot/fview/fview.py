@@ -12,6 +12,8 @@ import motmot.wxvalidatedtext.wxvalidatedtext as wxvt
 from optparse import OptionParser
 
 import motmot.cam_iface.choose as cam_iface_choose
+print "loaded camiface from", cam_iface_choose.__file__
+
 cam_iface = None
 import numpy as nx
 import numpy as np
