@@ -10,14 +10,15 @@ except ImportError:
 
 if traits_version==3:
     import enthought.traits.api as traits
-    from enthought.traits.ui.api import View, Item, Group
+    from enthought.traits.ui.api import View, Item, Group, RangeEditor
 elif traits_version==4:
     import traits.api as traits
-    from traitsui.api import View, Item, Group
+    from traitsui.api import View, Item, Group, RangeEditor
 else:
   raise RuntimeError('could not identify traits')
 
 import wx
+import motmot.wxvideo.wxvideo as wxvideo
 
 class HasTraits_FViewPlugin(traits.HasTraits):
     """Base class for traits-based plugin for fview.
@@ -81,4 +82,4 @@ class HasTraits_FViewPlugin(traits.HasTraits):
     def set_view_rotate_180( self, val ):
         pass
 
-__all__ = ['HasTraits_FViewPlugin', 'traits', 'View', 'Item', 'Group']
+__all__ = ['HasTraits_FViewPlugin', 'wx', 'wxvideo', 'traits', 'View', 'Item', 'Group', 'RangeEditor']
