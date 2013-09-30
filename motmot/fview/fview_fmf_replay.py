@@ -31,11 +31,15 @@ class ReplayApp(wx.App,traits.HasTraits):
     show_every_frame = traits.Bool(False) # internal use - whether to show frames
     flip_LR = traits.Bool(False)
     rotate_180 = traits.Bool(False)
+    next_frame = traits.Button
 
     traits_view = View( Group( Item('load_fmf_file',
                                     editor=ButtonEditor(),show_label=False),
                                Group(Item('play_single_frame'),
                                      Item('play_single_frame_number'),
+                                     Item(name='next_frame',
+                                          label='next frame',
+                                          show_label=False),
                                      Item('gui_show_all_frames'),
                                      orientation='horizontal'),
                                Item('play_frames',
@@ -403,6 +407,11 @@ class ReplayApp(wx.App,traits.HasTraits):
     def _play_and_save_frames_fired(self,event):
         self.next_play_is_saved = True
         self.play_frames = True # fire event
+
+    def _next_frame_fired(self):
+        self.play_single_frame_number += 1
+        self.play_single_frame = True
+        self.play_frames = True
 
 def play_func(loaded_fmf, im_pts_segs_q, playing, buf_allocator, single_frame_number, gui_show_all_frames ):
     global last_frame_info
