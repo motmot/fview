@@ -1,8 +1,22 @@
+traits_version = None
 try:
+    # Enthought library imports
     import enthought.traits.api as traits
-except:
-    # from traits 4.0
+    traits_version = 3
+except ImportError:
+    # traits 4
     import traits.api as traits
+    traits_version = 4
+
+if traits_version==3:
+    import enthought.traits.api as traits
+    from enthought.traits.ui.api import View, Item, Group
+elif traits_version==4:
+    import traits.api as traits
+    from traitsui.api import View, Item, Group
+else:
+  raise RuntimeError('could not identify traits')
+
 import wx
 
 class HasTraits_FViewPlugin(traits.HasTraits):
@@ -66,3 +80,5 @@ class HasTraits_FViewPlugin(traits.HasTraits):
 
     def set_view_rotate_180( self, val ):
         pass
+
+__all__ = ['HasTraits_FViewPlugin', 'traits', 'View', 'Item', 'Group']
