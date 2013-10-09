@@ -31,13 +31,11 @@ class HasTraits_FViewPlugin(traits.HasTraits):
     plugin_name = traits.Str('generic fview plugin') # set this in derived class
     frame = traits.Any # wxpython frame
 
-    def __init__(self,wx_parent,*args,**kwargs):
-        if 'wxFrame args' in kwargs:
-            frame_args=kwargs['wxFrame args']
-            del kwargs['wxFrame args']
-        else:
-            frame_args=(-1,self.plugin_name) # empty tuple
-        self.frame = wx.Frame(wx_parent,*frame_args)
+    def __init__(self,wx_parent,wxframe_args=None):
+        if wxframe_args is None:
+            wxframe_args = (-1,self.plugin_name)
+
+        self.frame = wx.Frame(wx_parent,*wxframe_args)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         control = self.edit_traits( parent=self.frame,
                                     kind='subpanel',

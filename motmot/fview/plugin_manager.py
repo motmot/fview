@@ -3,7 +3,7 @@ import wx
 import sys, os
 import warnings, traceback
 
-def load_plugins(wxframe,use_plugins=None,return_plugin_names=False):
+def load_plugins(wxframe,use_plugins=None,return_plugin_names=False,**fview_options):
     """
     Optional arguments
     ------------------
@@ -68,7 +68,8 @@ def load_plugins(wxframe,use_plugins=None,return_plugin_names=False):
     bad_plugins = {}
     for PluginClass,name in PluginClassesAndNames:
         try:
-            instance = PluginClass(wxframe)
+            print PluginClass,name
+            instance = PluginClass(wxframe,fview_options)
         except Exception,err:
             formatted_error = traceback.format_exc(err)
             bad_plugins[name] = (str(err), formatted_error)

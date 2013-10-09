@@ -26,8 +26,10 @@ import warnings
 
 if int(os.environ.get('FVIEW_NO_OPENGL','0')):
     import motmot.wxvideo.wxvideo as video_module
+    have_opengl = False
 else:
     import motmot.wxglvideo.simple_overlay as video_module
+    have_opengl = True
 
 # trigger extraction
 RESFILE = pkg_resources.resource_filename(__name__,"fview.xrc")
@@ -781,9 +783,12 @@ def _need_cam_iface():
 
 class App(wx.App):
 
+    def __init__(self, fview_options, *args, **kwargs):
+        self.options = fview_options.pop('options')
+        self._fview_options = fview_options
+        wx.App.__init__(self, *args, **kwargs)
+
     def OnInit(self,*args,**kw):
-        global options
-        self.options = options # hack to workaround not passing args to OnInit
         self.save_images = 0 # save every nth image, 0 = false
         self.cam_ids = {}
         self.exit_code = 0
@@ -1130,7 +1135,9 @@ class App(wx.App):
         result = plugin_manager.load_plugins(
             self.frame,
             use_plugins=self.options.plugins,
-            return_plugin_names=self.options.show_plugins)
+            return_plugin_names=self.options.show_plugins,
+            **self._fview_options
+        )
 
         if self.options.show_plugins:
             print 'plugin description'
@@ -1275,7 +1282,8 @@ class App(wx.App):
                 dlg.Destroy()
                 raise
             vendor, model, chip = cam_iface.get_camera_info(cam_no_selected)
-            self.cam_ids[self.cam] = 'cam %d'%(len(self.cam_ids.keys())+1,)
+
+            self.cam_ids[self.cam] = chip
             format = self.cam.get_pixel_coding()
             self.statusbar.SetStatusText('Connected to %s %s (%s)'%(
                 vendor, model, format),0)
@@ -1966,10 +1974,20 @@ def main():
     global cam_iface
     if int(os.environ.get('FVIEW_NO_REDIRECT','0')):
         log_filename = None
-        kw = {}
+        redirect = False
     else:
         log_filename = os.path.abspath( 'fview.log' )
-	kw = dict(redirect=True,filename=log_filename)
+        redirect = True
+
+    if int(os.environ.get('FVIEW_NO_ROS', '0')):
+        have_ros = False
+    else:
+        import roslib; roslib.load_manifest('rospy')
+        import rospy
+        rospy.init_node('fview', anonymous=True, disable_signals=True)
+        have_ros = True
+
+    kw = dict(redirect=redirect,filename=log_filename)
 
     usage = '%prog [options]'
 
@@ -1980,13 +1998,19 @@ def main():
     parser.add_option("--show-plugins", action='store_true',
                       help="show plugin numbers and names (then quit)",
                       default=False)
-    global options
+
     (options, args) = parser.parse_args()
 
     if options.plugins is not None:
         options.plugins = [int(p) for p in options.plugins.split(',') if p != '']
 
-    app = App(**kw)
+    fview_options = {
+        "options":options,
+        "have_ros":have_ros,
+        "have_opengl":have_opengl
+    }
+
+    app = App(fview_options,**kw)
     app.log_filename = log_filename
 
     if 0:
