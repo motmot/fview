@@ -1979,13 +1979,15 @@ def main():
         log_filename = os.path.abspath( 'fview.log' )
         redirect = True
 
-    if int(os.environ.get('FVIEW_NO_ROS', '0')):
-        have_ros = False
-    else:
-        import roslib; roslib.load_manifest('rospy')
-        import rospy
-        rospy.init_node('fview', anonymous=True, disable_signals=True)
-        have_ros = True
+    have_ros = False
+    if not int(os.environ.get('FVIEW_NO_ROS', '0')):
+        try:
+            import roslib; roslib.load_manifest('rospy')
+            import rospy
+            rospy.init_node('fview', anonymous=True, disable_signals=True)
+            have_ros = True
+        except ImportError:
+            pass
 
     kw = dict(redirect=redirect,filename=log_filename)
 
