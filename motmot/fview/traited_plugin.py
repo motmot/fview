@@ -2,10 +2,12 @@ traits_version = None
 try:
     # Enthought library imports
     import enthought.traits.api as traits
+    from enthought.traits.api import on_trait_change
     traits_version = 3
 except ImportError:
     # traits 4
     import traits.api as traits
+    from traits.api import on_trait_change
     traits_version = 4
 
 if traits_version==3:
@@ -80,4 +82,9 @@ class HasTraits_FViewPlugin(traits.HasTraits):
     def set_view_rotate_180( self, val ):
         pass
 
-__all__ = ['HasTraits_FViewPlugin', 'wx', 'wxvideo', 'traits', 'View', 'Item', 'Group', 'RangeEditor']
+__all__ = ['HasTraits_FViewPlugin',
+           'wx', 'wxvideo',
+           'traits',
+           'View', 'Item', 'Group', 'RangeEditor'
+]
+
