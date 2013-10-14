@@ -3,9 +3,9 @@ from __future__ import with_statement
 import threading, time, sys, os
 import Queue
 import motmot.utils.config
+import traceback
+import warnings
 import pkg_resources # from setuptools
-
-from version import __version__ # fview.version
 
 import wx
 import motmot.wxvalidatedtext.wxvalidatedtext as wxvt
@@ -20,9 +20,10 @@ import numpy as np
 import motmot.FlyMovieFormat.FlyMovieFormat as FlyMovieFormat
 
 from wx import xrc
-import plugin_manager
-import traceback
-import warnings
+
+from .plugin_manager import load_plugins
+from .utils import SharedValue
+from .version import __version__
 
 if int(os.environ.get('FVIEW_NO_OPENGL','0')):
     import motmot.wxvideo.wxvideo as video_module
@@ -107,31 +108,6 @@ if sys.platform == 'win32':
     time_func = thack.time
 else:
     time_func = time.time
-
-class SharedValue:
-    def __init__(self):
-        self.evt = threading.Event()
-        self._val = None
-    def set(self,value):
-        # called from producer thread
-        self._val = value
-        self.evt.set()
-    def is_new_value_waiting(self):
-        return self.evt.isSet()
-    def get(self,*args,**kwargs):
-        # called from consumer thread
-        self.evt.wait(*args,**kwargs)
-        val = self._val
-        self.evt.clear()
-        return val
-    def get_nowait(self):
-        # XXX TODO this is not atomic and is thus dangerous.
-        # (The value could get read, then another thread could set it,
-        # and only then might it get flagged as clear by this thread,
-        # even though a new value is waiting.)
-        val = self._val
-        self.evt.clear()
-        return val
 
 in_fnt = Queue.Queue()
 
@@ -1132,7 +1108,7 @@ class App(wx.App):
         return True
 
     def _load_plugins(self):
-        result = plugin_manager.load_plugins(
+        result = load_plugins(
             self.frame,
             use_plugins=self.options.plugins,
             return_plugin_names=self.options.show_plugins,
