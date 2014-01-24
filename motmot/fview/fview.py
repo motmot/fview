@@ -12,7 +12,6 @@ import motmot.wxvalidatedtext.wxvalidatedtext as wxvt
 from optparse import OptionParser
 
 import motmot.cam_iface.choose as cam_iface_choose
-print "loaded camiface from", cam_iface_choose.__file__
 
 cam_iface = None
 import numpy as nx
@@ -1149,12 +1148,17 @@ class App(wx.App):
 
         driver = cam_iface.get_driver_name()
         wrapper = cam_iface.get_wrapper_name()
+        py_libinfo,c_libinfo = cam_iface.get_library_info()
         disp = 'FView %s\n'%__version__
-        disp += 'cam_iface driver: %s, wrapper: %s\n\n'%(driver,wrapper)
-        disp += 'Loaded modules (.egg files only):\n'
         disp += '---------------------------------\n'
-        for d in pkg_resources.working_set:
-            disp += str(d) + '\n'
+        disp += '\nlibcamiface details:\n'
+        disp += '\tdriver: %s\n\twrapper: %s\n'%(driver,wrapper)
+        disp += 'pylibcamiface:\n\tloaded: %s\n\tversion: %s\n' % (py_libinfo)
+        disp += '  libcamiface:\n\tloaded: %s\n\tversion: %s\n' % (c_libinfo)
+        disp += '\nplugin details:\n'
+        disp += '---------------------------------\n'
+        for plugin in self.plugins:
+            disp += plugin.get_plugin_name() + '\n'
         dlg = wx.MessageDialog(self.frame, disp,
                                'About FView',
                                wx.OK | wx.ICON_INFORMATION)
