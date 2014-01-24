@@ -1793,10 +1793,14 @@ class App(wx.App):
         if self.grab_thread is not None:
             if not self.grab_thread.isAlive():
                 self.grab_thread = None # only show this once
+                if self.log_filename is None:
+                    log_filename_str = ''
+                else:
+                    log_filename_str = '%s\n\n'%(self.log_filename,)
                 dlg = wx.MessageDialog(
                     self.frame,
                     'the camera thread appears to have died unexpectedly. '
-                    'The log file will have more details.',
+                    'The log file will have more details.\n\n%s' % log_filename_str,
                     'FView Error',
                     wx.OK | wx.ICON_ERROR)
                 try:
