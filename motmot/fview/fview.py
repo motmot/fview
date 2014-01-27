@@ -1971,7 +1971,9 @@ def main():
     have_ros = False
     if not int(os.environ.get('FVIEW_NO_ROS', '0')):
         try:
-            import roslib; roslib.load_manifest('rospy')
+            import roslib
+            import roslib.packages
+            roslib.load_manifest('rospy')
             import rospy
             rospy.init_node('fview', anonymous=True, disable_signals=True)
             have_ros = True
