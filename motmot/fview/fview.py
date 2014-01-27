@@ -1115,6 +1115,9 @@ class App(wx.App):
         )
 
         if self.options.show_plugins:
+            #ensure this message goes to stdout and not the log file
+            #(because we were asked to do this via command line anyway)
+            self.RestoreStdio()
             print 'plugin description'
             print '------ -----------'
             for i,plugin in enumerate(result):
