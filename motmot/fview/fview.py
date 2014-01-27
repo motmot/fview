@@ -1151,6 +1151,11 @@ class App(wx.App):
         py_libinfo,c_libinfo = cam_iface.get_library_info()
         disp = 'FView %s\n'%__version__
         disp += '---------------------------------\n'
+        for k,v in self._fview_options.iteritems():
+            if k == 'options':
+                continue
+            else:
+                disp += '%s: %r\n' % (k,v)
         disp += '\nlibcamiface details:\n'
         disp += '\tdriver: %s\n\twrapper: %s\n'%(driver,wrapper)
         disp += 'pylibcamiface:\n\tloaded: %s\n\tversion: %s\n' % (py_libinfo)
