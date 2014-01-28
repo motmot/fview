@@ -1982,6 +1982,8 @@ def main():
             have_ros = True
         except ImportError:
             pass
+        except KeyError:
+            pass
 
     kw = dict(redirect=redirect,filename=log_filename)
 
