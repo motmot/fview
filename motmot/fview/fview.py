@@ -758,10 +758,27 @@ def _need_cam_iface():
 
 class App(wx.App):
 
-    def __init__(self, fview_options, *args, **kwargs):
+    def __init__(self, fview_options, **kwargs):
         self.options = fview_options.pop('options')
         self._fview_options = fview_options
-        wx.App.__init__(self, *args, **kwargs)
+
+        #wx dies loudly in __init__ if the log file is not writable, so
+        #do stdio redirection ourselves... safely, and to a log file specific to
+        #the camera id
+        redirect = kwargs.pop('redirect')
+        filename = kwargs.pop('filename')
+
+        wx.App.__init__(self, **kwargs)
+
+        if redirect and filename:
+            print 'logging to %s' % filename
+            try:
+                self.RedirectStdio(filename)
+            except IOError:
+                filename = tempfile.mkstemp(prefix='fview',suffix='.log')[1]
+                self.RedirectStdio(filename)
+
+        self.log_filename = filename
 
     def OnInit(self,*args,**kw):
         self.save_images = 0 # save every nth image, 0 = false
@@ -1243,6 +1260,10 @@ class App(wx.App):
                         num_buffers = int(dlg.num_buffers[idx].GetValue())
             else:
                 return
+
+            #move logfile to be camera specific
+            self.log_filename = self.log_filename + ('.%d' % cam_no_selected)
+            self.RedirectStdio(self.log_filename)
 
             vendor, model, chip = cam_iface.get_camera_info(cam_no_selected)
 
@@ -1968,7 +1989,13 @@ def main():
         log_filename = None
         redirect = False
     else:
-        log_filename = os.path.abspath( 'fview.log' )
+        #Try first in ~/.cache (on modern linux systems)
+        home = os.path.expanduser('~')
+        log = 'fview.log'
+        if os.path.isdir(os.path.join(home,'.cache')):
+            log_filename = os.path.join(home,'.cache',log)
+        else:
+            log_filename = os.path.join(home,log)
         redirect = True
 
     have_ros = False
@@ -2009,7 +2036,6 @@ def main():
     }
 
     app = App(fview_options,**kw)
-    app.log_filename = log_filename
 
     if 0:
         # run under profiler
