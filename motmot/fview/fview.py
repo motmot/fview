@@ -2027,7 +2027,7 @@ def main():
     (options, args) = parser.parse_args()
 
     if options.plugins is not None:
-        options.plugins = [int(p) for p in options.plugins.split(',') if p != '']
+        options.plugins = [p for p in options.plugins.split(',') if p != '']
 
     fview_options = {
         "options":options,

@@ -17,6 +17,19 @@ def load_plugins(wxframe,use_plugins=None,return_plugin_names=False,**fview_opti
     pkg_env = pkg_resources.Environment()
     count = 0
     plugin_names = []
+
+    #use_plugins can be either a string or an integer plugin number
+    #(confusing I know). Command line API retained for backwards
+    #compatibility...
+    use_plugins_num = []
+    use_plugins_name = []
+    if use_plugins is not None:
+        for p in use_plugins:
+            try:
+                use_plugins_num.append( int(p) )
+            except ValueError:
+                use_plugins_name.append( p )
+
     for name in pkg_env:
         egg = pkg_env[name][0]
         modules = []
@@ -27,9 +40,19 @@ def load_plugins(wxframe,use_plugins=None,return_plugin_names=False,**fview_opti
             plugin_names.append(name)
             if return_plugin_names:
                 continue
-            if use_plugins is not None:
-                if this_plugin_number not in use_plugins:
-                    continue
+
+            use = False
+            if use_plugins is None:
+                use = True
+            else:
+                if use_plugins_num and (this_plugin_number in use_plugins_num):
+                    use = True
+                if use_plugins_name and (name in use_plugins_name):
+                    use = True
+
+            if not use:
+                continue
+
             egg.activate()
             entry_point = egg.get_entry_info('motmot.fview.plugins', name)
             if entry_point.module_name not in loaded_components:
