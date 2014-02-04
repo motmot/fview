@@ -778,6 +778,7 @@ class App(wx.App):
                 filename = tempfile.mkstemp(prefix='fview',suffix='.log')[1]
                 self.RedirectStdio(filename)
 
+        self.redirect = redirect
         self.log_filename = filename
 
     def OnInit(self,*args,**kw):
@@ -1262,8 +1263,10 @@ class App(wx.App):
                 return
 
             #move logfile to be camera specific
-            self.log_filename = self.log_filename + ('.%d' % cam_no_selected)
-            self.RedirectStdio(self.log_filename)
+            if self.log_filename is not None:
+                self.log_filename = self.log_filename + ('.%d' % cam_no_selected)
+                if self.redirect:
+                    self.RedirectStdio(self.log_filename)
 
             vendor, model, chip = cam_iface.get_camera_info(cam_no_selected)
 
