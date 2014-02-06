@@ -757,6 +757,24 @@ def _need_cam_iface():
         backend = rc_params['backend']
         cam_iface = cam_iface_choose.import_backend(backend,wrapper)
 
+class _BlockingROSQuitThread(threading.Thread):
+    def __init__(self, wxapp, func):
+        threading.Thread.__init__(self, name="rosquitthread")
+        self.daemon = True
+        self._wxapp = wxapp
+        self._func = func
+
+    def run(self):
+        if self._func is None:
+            while 1:
+                time.sleep(0.1)
+        else:
+            self._func()
+
+        event = wx.CommandEvent(FViewShutdownEvent)
+        event.SetEventObject(self._wxapp)
+        wx.PostEvent(self._wxapp, event)
+
 class App(wx.App):
 
     def __init__(self, fview_options, **kwargs):
@@ -781,6 +799,13 @@ class App(wx.App):
 
         self.redirect = redirect
         self.log_filename = filename
+
+        _ros_quit_func = None
+        if self._fview_options['have_ros']:
+            import rospy
+            _ros_quit_func = rospy.spin
+        self.quit_thread = _BlockingROSQuitThread(self, _ros_quit_func)
+        self.quit_thread.start()
 
     def OnInit(self,*args,**kw):
         self.save_images = 0 # save every nth image, 0 = false
