@@ -243,9 +243,9 @@ class ReplayApp(wx.App,traits.HasTraits):
             except Queue.Empty:
                 pass
 
-            if (tup is None and
-                self.options.pump and
-                last_frame_info is not None):
+            if (tup is None and self.options.pump and last_frame_info is not None):
+                points = tuple()
+                linesegs = tuple()
                 for tracker in self.trackers:
                     points,linesegs = tracker.process_frame(*last_frame_info)
                 im = last_frame_info[1]
