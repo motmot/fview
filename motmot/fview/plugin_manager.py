@@ -91,7 +91,6 @@ def load_plugins(wxframe,use_plugins=None,return_plugin_names=False,**fview_opti
     bad_plugins = {}
     for PluginClass,name in PluginClassesAndNames:
         try:
-            print PluginClass,name
             instance = PluginClass(wxframe,fview_options)
         except Exception,err:
             formatted_error = traceback.format_exc(err)
