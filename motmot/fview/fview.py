@@ -5,6 +5,7 @@ import Queue
 import motmot.utils.config
 import traceback
 import warnings
+import socket
 import pkg_resources # from setuptools
 
 import wx
@@ -2001,6 +2002,7 @@ def main():
             log_filename = os.path.join(home,log)
         redirect = True
 
+    ros_msg = ""
     have_ros = False
     if not int(os.environ.get('FVIEW_NO_ROS', '0')):
         try:
@@ -2008,12 +2010,32 @@ def main():
             import roslib.packages
             roslib.load_manifest('rospy')
             import rospy
+            #/run_id is always set, so attempting to get this parameter
+            rospy.get_param('/run_id')
             rospy.init_node('fview', anonymous=True, disable_signals=True)
             have_ros = True
+            ros_msg = "ROS enabled: version '%s' detected" % rospy.get_param('/rosdistro', 'unknown')
         except ImportError:
-            pass
-        except KeyError:
-            pass
+            #no roslib
+            ros_msg = "ROS disabled: no roslib installed"
+        except KeyError, e:
+            if '/run_id' in str(e):
+                #no /run_id parameter (roscore needs to be restarted). you probbably
+                #did rosparam delete /
+                ros_msg = "ROS disabled: roscore needs restarting (missing /run_id)"
+            else:
+                #ROS_ROOT or some other ROS environment variable missing
+                ros_msg = "ROS disabled: invalid install - %s not found" % e
+        except socket.error:
+            #roscore not running (the get_param call failed)
+            ros_msg = "ROS disabled: roscore not running"
+        except Exception, e:
+            if 'package' in str(e):
+                ros_msg = "ROS disabled: could not find rospy package"
+            else:
+                ros_msg = "ROS disabled: unknown error: %s" % e
+
+    print ros_msg
 
     kw = dict(redirect=redirect,filename=log_filename)
 
