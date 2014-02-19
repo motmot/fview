@@ -3,6 +3,7 @@ import motmot.FlyMovieFormat.FlyMovieFormat as FlyMovieFormat
 import numpy
 import wx
 import time, Queue, threading, os
+import socket
 if int(os.environ.get('FVIEW_NO_OPENGL','0')):
     import motmot.wxvideo.wxvideo as simple_overlay
 else:
