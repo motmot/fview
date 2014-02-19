@@ -108,7 +108,7 @@ class ReplayApp(wx.App,traits.HasTraits):
                 print '    ',i,plugin
             sys.exit(0)
 
-        self.plugins, plugin_dict, bad_plugins = result
+        self.plugins, plugin_dict, bad_plugins, plugin_names = result
 
         if len(bad_plugins):
             for name, (err,full_err) in bad_plugins.iteritems():

@@ -88,6 +88,7 @@ def load_plugins(wxframe,use_plugins=None,return_plugin_names=False,**fview_opti
 
     # make instances of plugins
     plugins = []
+    plugin_names = []
     bad_plugins = {}
     for PluginClass,name in PluginClassesAndNames:
         try:
@@ -98,6 +99,7 @@ def load_plugins(wxframe,use_plugins=None,return_plugin_names=False,**fview_opti
             traceback.print_exc(err,sys.stderr)
         else:
             plugins.append( instance )
+            plugin_names.append(name)
     plugin_dict = {}
     for plugin in plugins:
         class PluginHelper:
@@ -113,5 +115,5 @@ def load_plugins(wxframe,use_plugins=None,return_plugin_names=False,**fview_opti
             def OnShowFrame(self,event):
                 self.frame.Show(True)
         plugin_dict[plugin] = PluginHelper(plugin)
-    return plugins, plugin_dict, bad_plugins
+    return plugins, plugin_dict, bad_plugins, plugin_names
 

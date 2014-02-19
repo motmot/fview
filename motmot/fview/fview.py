@@ -1168,7 +1168,15 @@ class App(wx.App):
                 print '    ',i,plugin
             sys.exit(0)
 
-        plugins, plugin_dict, bad_plugins = result
+        plugins, plugin_dict, bad_plugins, plugin_names = result
+        if self.options.plugins is not None:
+            fail = False
+            for desired_plugin in self.options.plugins:
+                if desired_plugin not in plugin_names:
+                    print 'ERROR: you requested plugin %r, but it was not loaded'%desired_plugin
+                    fail = True
+            if fail:
+                sys.exit(1)
 
         self.plugins = plugins
         self.plugin_dict = plugin_dict
