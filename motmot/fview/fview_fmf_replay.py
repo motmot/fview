@@ -95,11 +95,52 @@ class ReplayApp(wx.App,traits.HasTraits):
                 self.options.plugins = [0] # default to first plugin
         del self.options.plugin
 
+        # ROS loading start --------------------
+
+        ros_msg = ""
+        have_ros = False
+        if not int(os.environ.get('FVIEW_NO_ROS', '0')):
+            try:
+                import roslib
+                import roslib.packages
+                roslib.load_manifest('rospy')
+                import rospy
+                #/run_id is always set, so attempting to get this parameter
+                rospy.get_param('/run_id')
+                rospy.init_node('fview', anonymous=True, disable_signals=True)
+                have_ros = True
+                ros_msg = "ROS enabled: version '%s' detected" % rospy.get_param('/rosdistro', 'unknown')
+            except ImportError:
+                #no roslib
+                ros_msg = "ROS disabled: no roslib installed"
+            except KeyError, e:
+                if '/run_id' in str(e):
+                    #no /run_id parameter (roscore needs to be restarted). you probbably
+                    #did rosparam delete /
+                    ros_msg = "ROS disabled: roscore needs restarting (missing /run_id)"
+                else:
+                    #ROS_ROOT or some other ROS environment variable missing
+                    ros_msg = "ROS disabled: invalid install - %s not found" % e
+            except socket.error:
+                #roscore not running (the get_param call failed)
+                ros_msg = "ROS disabled: roscore not running"
+            except Exception, e:
+                if 'package' in str(e):
+                    ros_msg = "ROS disabled: could not find rospy package"
+                else:
+                    ros_msg = "ROS disabled: unknown error: %s" % e
+
+        print ros_msg
+
+        # ROS loading stop --------------------
+
+
         self.frame = wx.Frame(None,size=(800,600),title="fview_fmf_replay")
         result = plugin_manager.load_plugins(
             self.frame,
             use_plugins=self.options.plugins,
-            return_plugin_names=self.options.show_plugins)
+            return_plugin_names=self.options.show_plugins,
+            have_ros=have_ros)
 
         if self.options.show_plugins:
             print 'plugin description'
