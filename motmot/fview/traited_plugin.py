@@ -33,7 +33,7 @@ class HasTraits_FViewPlugin(traits.HasTraits):
     plugin_name = traits.Str('generic fview plugin') # set this in derived class
     frame = traits.Any # wxpython frame
 
-    def __init__(self,wx_parent,wxframe_args=None):
+    def __init__(self,wx_parent,wxframe_args=None,fview_options=None):
         if wxframe_args is None:
             wxframe_args = (-1,self.plugin_name)
 
